@@ -7,6 +7,4 @@ class Instruction:
     def __str__(self) -> str:
         return f"TIME: {self.time} TEMP: {self.temp}  TYPE: {self.type}"
 
-    def sendData():
-        pass
 
