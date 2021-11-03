@@ -1,3 +1,7 @@
+import Ingredient
+import Instruction
+import Recipe
+
 class homebrewDesktop:
     def __init__(self):
         pass

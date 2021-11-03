@@ -1,9 +1,18 @@
+from Ingredient import Ingredient
+from Instruction import Instruction
+
 class Recipe:
-    def __init__(self, name, ingredients, instructions):
+    def __init__(self, name: str, ingredients: dict, instructions: list):
         self.name = name
         self.ingredients = ingredients
         self.instructions = instructions
 
+    def __str__(self) -> str:
+        ingredientStr = ""
+        for i in self.ingredients.values():
+            ingredientStr += f"Name: {i.name} Amount: {i.amount} Stage: {i.stage}\n"
+        return f"Recipe name: {self.name} \nIngredients: {ingredientStr}Instructions: {self.instructions}"
+    
     def getName(self):
         return self.name
 
@@ -22,14 +31,21 @@ class Recipe:
     def setInstructions(self, newInstructions):
         self.instructions = newInstructions
                 
-    def addIngredient():
-        pass
+    def addIngredient(self, name, amount, stage):
+        newIngredient = Ingredient(name, amount, stage);
+        self.ingredients[name] = newIngredient
 
-    def removeIngredient():
-        pass
+    def removeIngredient(self, name):
+        if name not in self.ingredients:
+            return
 
-    def editIngredient():
-        pass
+        del(self.ingredients[name])
+
+    def editIngredient(self, name, newName, newAmount, newStage):
+        if name in self.ingredients:
+            self.ingredients[name].name = newName
+            self.ingredients[name].amount = newAmount
+            self.ingredients[name].stage = newStage
 
     def displayRecipe():
         pass
@@ -39,3 +55,11 @@ class Recipe:
 
     def deleteRecipe():
         pass
+
+testRecipe = Recipe("YUM BEER", {}, [])
+
+testRecipe.addIngredient("hops", 4, "fermenter")
+testRecipe.addIngredient("sugar", 2, "boiling")
+
+print(testRecipe)
+
