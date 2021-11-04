@@ -233,3 +233,15 @@ microcontroller/homebrew-controller/.cproject
 microcontroller/homebrew-controller/.project
 microcontroller/homebrew-controller/.settings/org.eclipse.cdt.codan.core.prefs
 microcontroller/homebrew-controller/.settings/org.eclipse.cdt.debug.core.prefs
+microcontroller/homebrew-controller/.settings/org.eclipse.core.resources.prefs
+microcontroller/homebrew-controller/Debug/ccsObjs.opt
+microcontroller/homebrew-controller/Debug/homebrew-controller.map
+microcontroller/homebrew-controller/Debug/homebrew-controller_linkInfo.xml
+microcontroller/homebrew-controller/Debug/main.d
+microcontroller/homebrew-controller/Debug/makefile
+microcontroller/homebrew-controller/Debug/objects.mk
+microcontroller/homebrew-controller/Debug/sources.mk
+microcontroller/homebrew-controller/Debug/subdir_rules.mk
+microcontroller/homebrew-controller/Debug/subdir_vars.mk
+microcontroller/homebrew-controller/Debug/tm4c123gh6pm_startup_ccs.d
+microcontroller/homebrew-controller/Debug/tm4c123gh6pm_startup_ccs.obj
