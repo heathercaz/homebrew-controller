@@ -9,9 +9,15 @@ class Recipe:
 
     def __str__(self) -> str:
         ingredientStr = ""
+        instructionStr = ""
         for i in self.ingredients.values():
             ingredientStr += f"\tName: {i.name}\tAmount: {i.amount}\tStage: {i.stage}\n"
-        return f"Recipe name: {self.name} \nIngredients:\n {ingredientStr}Instructions: {self.instructions}"
+
+        j = 0
+        for i in self.instructions:
+            j+=1
+            instructionStr += f"\tStep {j}\n\t{i.direction}\n"
+        return f"Recipe name: {self.name} \nIngredients:\n {ingredientStr}\nInstructions: \n{instructionStr}"
     
     def getName(self):
         return self.name
@@ -47,6 +53,13 @@ class Recipe:
             self.ingredients[name].amount = newAmount
             self.ingredients[name].stage = newStage
 
+    def addInstruction(self, step: int, time, temp, type, direction):
+        newInstruction = Instruction(time, temp, type, direction)
+        if step >= len(self.instructions):
+            self.instructions.append(newInstruction)
+        else:
+            self.instructions[step] = newInstruction
+
     def displayRecipe():
         pass
 
@@ -55,11 +68,4 @@ class Recipe:
 
     def deleteRecipe():
         pass
-
-# testRecipe = Recipe("YUM BEER", {}, [])
-
-# testRecipe.addIngredient("hops", 4, "fermenter")
-# testRecipe.addIngredient("sugar", 2, "boiling")
-
-# print(testRecipe)
 

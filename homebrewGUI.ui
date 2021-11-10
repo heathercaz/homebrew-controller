@@ -27,7 +27,7 @@
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="label_recipe">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -45,7 +45,7 @@
      <string>Recipes</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
+   <widget class="QLabel" name="label_preview">
     <property name="geometry">
      <rect>
       <x>480</x>
@@ -73,7 +73,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>310</x>
@@ -107,6 +107,7 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
@@ -118,12 +119,17 @@
    </property>
    <widget class="QMenu" name="menuRecipes">
     <property name="title">
-     <string>Recipe Browser</string>
+     <string>&amp;File</string>
     </property>
+    <addaction name="actionOpen"/>
    </widget>
    <addaction name="menuRecipes"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
