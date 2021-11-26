@@ -80,3 +80,12 @@ class Ui_HomebrewController(object):
         self.menuRecipes.setTitle(_translate("HomebrewController", "&File"))
         self.actionOpen.setText(_translate("HomebrewController", "Open"))
 
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    HomebrewController = QtWidgets.QMainWindow()
+    ui = Ui_HomebrewController()
+    ui.setupUi(HomebrewController)
+    HomebrewController.show()
+    sys.exit(app.exec_())

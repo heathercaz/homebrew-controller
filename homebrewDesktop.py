@@ -5,11 +5,14 @@ from homebrewGUI import Ui_HomebrewController
 from newRecipe import Ui_newRecipe
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
+import os
+import json
 
 # pyuic5 -x homebrewGUI.ui -o homebrewGUI.py
-class homebrewDesktop:
+class homebrewDesktop():
     def __init__(self):
         self.recipes = {};
+        self.workingDir =  os.getcwd()
 
         self.app = QtWidgets.QApplication(sys.argv)
         self.HomebrewController = QtWidgets.QMainWindow()
@@ -21,6 +24,10 @@ class homebrewDesktop:
 
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
 
+        pass
+
+    def setWorkingDir(self):
+        self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Hey! Select a File')
         pass
 
     def addRecipe(self, recipe):
@@ -38,19 +45,12 @@ class homebrewDesktop:
 
     def previewRecipe(self):
         selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[0].text()]
-        self.ui.recipePreview.setPlainText(str(selectedRecipe))
-
-    def sendData():
-        pass
-
-    def receiveData():
-        pass
+        self.ui.recipePreview.setPlainText(selectedRecipe.displayRecipe())
 
     def openNewRecipe(self):
         self.newRecipeDialog = QtWidgets.QDialog()
         ui = Ui_newRecipe()
         ui.setupUi(self.newRecipeDialog)
-
 
         ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
         ui.addIngredientButton.clicked.connect(lambda: self.setIngredientRows(ui))
@@ -58,7 +58,6 @@ class homebrewDesktop:
         self.instrRows = 1
         self.newRecipeDialog.show()
         
-
     def getRecipeName(self, ui):
         try:
             return ui.recipeName.text()
@@ -70,17 +69,25 @@ class homebrewDesktop:
         name = self.getRecipeName(ui)
         newRec = Recipe(name, {}, [])
 
-        #get first ingredient
+        #get all ingredients
         try:
             for i in range(self.ingreRows):
                 ingre = ui.tableWidget.item(i,0).text()
-                amnt = int(ui.tableWidget.item(i, 1).text())
-                stage = ui.tableWidget.item(i,3).text()
+                try:
+                    amnt = int(ui.tableWidget.item(i, 1).text())
+                except:
+                    amnt = 0
+                
+                try:
+                    stage = ui.tableWidget.item(i,3).text()
+                except:
+                    stage = "none"
                 newRec.addIngredient(ingre,amnt,stage)
 
         except:
             print("an error occured when reading ingredients")
 
+        newRec.toJson(name)
         self.addRecipe(newRec)
 
     def setIngredientRows(self, ui):
@@ -91,21 +98,40 @@ class homebrewDesktop:
         self.instrRows+=1
         ui.tableWidget_2.setRowCount(self.instrRows)
 
+    def getRecipeFromFile(self, fn):
+        i = os.getcwd()+"\\"+fn+".json"
+
+        with open(i, "r") as fo:
+            recipeDict = json.load(fo)
+
+        print(str(recipeDict))
+        return recipeDict
+
+    def sendData():
+        pass
+
+    def receiveData():
+        pass
         
 if __name__ == "__main__":
     testHomebrewDesktop = homebrewDesktop()
+    # testHomebrewDesktop.getRecipeFromFile("Cool Beer")
+    print(testHomebrewDesktop.workingDir)
 
-    testRecipe = Recipe("YUM BEER", {}, [0])
-    testRecipe2 = Recipe("YUMMIER BEER", {}, [])
+    # testRecipe = Recipe("YUM BEER", {}, [0])
+    # testRecipe2 = Recipe("YUMMIER BEER", {}, [])
 
-    testRecipe.addIngredient("hops", 4, "fermenter")
-    testRecipe.addIngredient("sugar", 2, "boiling")
+    # testRecipe.addIngredient("hops", 4, "fermenter")
+    # testRecipe.addIngredient("sugar", 2, "boiling")
 
-    testRecipe.addInstruction(0, "5 min", 100, "boil", "Add the sugar to the water. Let boil for 5 min")
-    testRecipe.addInstruction(1, "45 min", 27, "ferment", "Time to ferment those hops for 45 mins")
+    # testRecipe.addInstruction(0, "5 min", 100, "boil", "Add the sugar to the water. Let boil for 5 min")
+    # testRecipe.addInstruction(1, "45 min", 27, "ferment", "Time to ferment those hops for 45 mins")
 
-    testHomebrewDesktop.addRecipe(testRecipe)
-    testHomebrewDesktop.addRecipe(testRecipe2)
+    # testHomebrewDesktop.addRecipe(testRecipe)
+    # testHomebrewDesktop.addRecipe(testRecipe2)
+
+
+
     
     testHomebrewDesktop.HomebrewController.show()
 
