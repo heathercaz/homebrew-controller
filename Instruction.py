@@ -1,11 +1,12 @@
 class Instruction:
-    def __init__(self, time, temp, type):
+    def __init__(self, time, temp, type, direction):
         self.time = time
         self.temp = temp
         self.type = type
+        self.direction = direction
 
     def __str__(self) -> str:
-        return f"TIME: {self.time} TEMP: {self.temp}  TYPE: {self.type}"
+        return f"TIME: {self.time} TEMP: {self.temp}  TYPE: {self.type} Direction: {self.direction}"
 
     def getTime(self):
         return self.time

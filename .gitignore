@@ -245,3 +245,5 @@ microcontroller/homebrew-controller/Debug/subdir_rules.mk
 microcontroller/homebrew-controller/Debug/subdir_vars.mk
 microcontroller/homebrew-controller/Debug/tm4c123gh6pm_startup_ccs.d
 microcontroller/homebrew-controller/Debug/tm4c123gh6pm_startup_ccs.obj
+__pycache__
+
