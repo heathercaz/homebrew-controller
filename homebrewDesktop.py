@@ -89,6 +89,9 @@ class homebrewDesktop():
         newRec.toJson(name)
         self.addRecipe(newRec)
 
+    def saveRecipe(self, recipe):
+        recipe.toJson(recipe.name)
+
     def setIngredientRows(self, ui):
         self.ingreRows+=1
         ui.tableWidget.setRowCount(self.ingreRows)
@@ -97,14 +100,8 @@ class homebrewDesktop():
         self.instrRows+=1
         ui.tableWidget_2.setRowCount(self.instrRows)
 
-    def dictToIngredientDict(self, ingredientDict: dict):
-        newIngredientDict = {}
-        for ingredient in ingredientDict:
-            newIngred = Ingredient.Ingredient(ingredientDict[ingredient][0], ingredientDict[ingredient][1], ingredientDict[ingredient][2])
-            newIngredientDict[ingredient] = newIngred
-        return newIngredientDict
-
     def showSavedRecipes(self):
+        print("loading recipes...")
         # TODO Change Beer Recipes to selected directory
         direct = os.getcwd()+"\\BeerRecipes\\"  # Get recipes from Directory. 
 
@@ -114,10 +111,10 @@ class homebrewDesktop():
                 print("error")
 
             with open(i, "r") as fo:
-                recipeDict = json.load(fo)
+                recipeDict = json.load(fo) # load json file into a dictionary
 
             recipeName = recipeDict['name']
-            recipeIngredients = self.dictToIngredientDict(recipeDict['ingredients'])
+            recipeIngredients = recipeDict['ingredients']
             recipeInstructions = recipeDict['instructions']
 
             loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions)
@@ -135,18 +132,6 @@ if __name__ == "__main__":
     testHomebrewDesktop = homebrewDesktop()
     testHomebrewDesktop.showSavedRecipes()
     print(testHomebrewDesktop.workingDir)
-
-    testRecipe = Recipe("YUM BEER", {}, [0])
-    testRecipe2 = Recipe("YUMMIER BEER", {}, [])
-
-    testRecipe.addIngredient("hops", 4, "fermenter")
-    testRecipe.addIngredient("sugar", 2, "boiling")
-
-    testRecipe.addInstruction(0, "5 min", 100, "boil", "Add the sugar to the water. Let boil for 5 min")
-    testRecipe.addInstruction(1, "45 min", 27, "ferment", "Time to ferment those hops for 45 mins")
-
-    testHomebrewDesktop.addRecipe(testRecipe)
-    testHomebrewDesktop.addRecipe(testRecipe2)
 
     testHomebrewDesktop.HomebrewController.show()
 
