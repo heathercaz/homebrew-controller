@@ -30,11 +30,10 @@ class homebrewDesktop():
         self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Hey! Select a File')
         pass
 
-    def addRecipe(self, recipe):
+    def addRecipe(self, recipe:dict):
         recipe_num = 1
         original_name = recipe.name
-    
-        while recipe.name in self.recipes.keys():
+        while recipe.name in self.recipes.keys(): # Make sure there are no repeated recipe names
             recipe.name = original_name + str(recipe_num)
             recipe_num+=1
 
@@ -98,13 +97,32 @@ class homebrewDesktop():
         self.instrRows+=1
         ui.tableWidget_2.setRowCount(self.instrRows)
 
-    def getRecipeFromFile(self, fn):
-        i = os.getcwd()+"\\"+fn+".json"
+    def dictToIngredientDict(self, ingredientDict: dict):
+        newIngredientDict = {}
+        for ingredient in ingredientDict:
+            newIngred = Ingredient.Ingredient(ingredientDict[ingredient][0], ingredientDict[ingredient][1], ingredientDict[ingredient][2])
+            newIngredientDict[ingredient] = newIngred
+        return newIngredientDict
 
-        with open(i, "r") as fo:
-            recipeDict = json.load(fo)
+    def showSavedRecipes(self):
+        # TODO Change Beer Recipes to selected directory
+        direct = os.getcwd()+"\\BeerRecipes\\"  # Get recipes from Directory. 
 
-        print(str(recipeDict))
+        for filename in os.listdir(direct):
+            i = os.path.join(direct, filename)
+            if os.path.isfile(i) == False:
+                print("error")
+
+            with open(i, "r") as fo:
+                recipeDict = json.load(fo)
+
+            recipeName = recipeDict['name']
+            recipeIngredients = self.dictToIngredientDict(recipeDict['ingredients'])
+            recipeInstructions = recipeDict['instructions']
+
+            loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions)
+            self.addRecipe(loadedRecipe)
+            print(str(recipeDict))
         return recipeDict
 
     def sendData():
@@ -115,24 +133,21 @@ class homebrewDesktop():
         
 if __name__ == "__main__":
     testHomebrewDesktop = homebrewDesktop()
-    # testHomebrewDesktop.getRecipeFromFile("Cool Beer")
+    testHomebrewDesktop.showSavedRecipes()
     print(testHomebrewDesktop.workingDir)
 
-    # testRecipe = Recipe("YUM BEER", {}, [0])
-    # testRecipe2 = Recipe("YUMMIER BEER", {}, [])
+    testRecipe = Recipe("YUM BEER", {}, [0])
+    testRecipe2 = Recipe("YUMMIER BEER", {}, [])
 
-    # testRecipe.addIngredient("hops", 4, "fermenter")
-    # testRecipe.addIngredient("sugar", 2, "boiling")
+    testRecipe.addIngredient("hops", 4, "fermenter")
+    testRecipe.addIngredient("sugar", 2, "boiling")
 
-    # testRecipe.addInstruction(0, "5 min", 100, "boil", "Add the sugar to the water. Let boil for 5 min")
-    # testRecipe.addInstruction(1, "45 min", 27, "ferment", "Time to ferment those hops for 45 mins")
+    testRecipe.addInstruction(0, "5 min", 100, "boil", "Add the sugar to the water. Let boil for 5 min")
+    testRecipe.addInstruction(1, "45 min", 27, "ferment", "Time to ferment those hops for 45 mins")
 
-    # testHomebrewDesktop.addRecipe(testRecipe)
-    # testHomebrewDesktop.addRecipe(testRecipe2)
+    testHomebrewDesktop.addRecipe(testRecipe)
+    testHomebrewDesktop.addRecipe(testRecipe2)
 
-
-
-    
     testHomebrewDesktop.HomebrewController.show()
 
     sys.exit(testHomebrewDesktop.app.exec_())

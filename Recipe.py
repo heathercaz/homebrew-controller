@@ -22,8 +22,6 @@ class Recipe:
 
             instructionStr += f"Step {j}: {i.direction},"
 
-
-
         # return recipeDict
         return f"Recipe name: {self.name}\nIngredients:[{ingredientStr}]\nInstructions:\n[{instructionStr}]"
 
@@ -72,7 +70,10 @@ class Recipe:
     def displayRecipe(self):
         ingredientStr = ""
         instructionStr = ""
+
+        print("values " + str(self.ingredients))
         for i in self.ingredients.values():
+            print(i)
             ingredientStr += f"\tName: {i.name}\tAmount: {i.amount}\tStage: {i.stage}\n"
 
         j = 0
