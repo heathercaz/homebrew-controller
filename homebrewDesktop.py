@@ -53,6 +53,8 @@ class homebrewDesktop():
 
         ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
         ui.addIngredientButton.clicked.connect(lambda: self.setIngredientRows(ui))
+        ui.addInstructionButton.clicked.connect(lambda: self.setInstructionRows(ui))
+
         self.ingreRows = 1
         self.instrRows = 1
         self.newRecipeDialog.show()
@@ -66,25 +68,59 @@ class homebrewDesktop():
 
     def saveNewRecipe(self, ui):
         name = self.getRecipeName(ui)
-        newRec = Recipe(name, {}, [])
+        newRec = Recipe(name, {}, {})
 
         #get all ingredients
         try:
             for i in range(self.ingreRows):
                 ingre = ui.tableWidget.item(i,0).text()
                 try:
-                    amnt = int(ui.tableWidget.item(i, 1).text())
+                    amnt = float(ui.tableWidget.item(i, 1).text())
                 except:
                     amnt = 0
+                    print("error adding amount")
                 
                 try:
                     stage = ui.tableWidget.item(i,3).text()
                 except:
                     stage = "none"
+                    print("error adding stage")
                 newRec.addIngredient(ingre,amnt,stage)
 
         except:
             print("an error occured when reading ingredients")
+
+        #get all ingredients
+        step = 1
+        print("instruction rows" + str(self.instrRows))
+        for i in range(self.instrRows):
+            try:
+                time = ui.tableWidget_2.item(i,0).text()
+                
+            except:
+                time = "0 min"
+                print("error getting time")
+
+            try:
+                temp = float(ui.tableWidget_2.item(i, 1).text())
+            except:
+                temp = 0
+                print("error adding amount")
+            
+            try:
+                stage = ui.tableWidget_2.item(i,2).text()
+            except:
+                stage = "none"
+                print("error adding stage")
+
+            try: 
+                note = ui.tableWidget_2.item(i,3).text()
+            except:
+                note = None
+                print("error adding Note")
+            
+            newRec.addInstruction(step, time, temp, stage, note)
+            step+=1
 
         newRec.toJson(name)
         self.addRecipe(newRec)
