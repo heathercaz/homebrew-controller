@@ -3,28 +3,51 @@ from Instruction import Instruction
 import json
 
 class Recipe:
-    def __init__(self, name: str, ingredients: dict, instructions: list):
+    def __init__(self, name: str, ingredients: dict, instructions: dict):
         self.name = name
-        self.ingredients = ingredients
-        self.instructions = instructions
+
+        self.ingredients = {}
+        # check ingredient type
+        for i in ingredients.values(): 
+            if isinstance(i, list):
+                newIngred = Ingredient(i[0], i[1], i[2])
+                self.ingredients[i[0]] = newIngred
+            elif isinstance(i, Ingredient):
+                self.ingredients[i.name] = i
+            else:
+                print("error adding ingredients")
+
+        self.instructions = {}
+        # check instruction type
+        instrNum = 1
+        for i in instructions.values(): 
+            print("instructions type " + str(type(i)) + "instructions: " + str(i))
+            if isinstance(i, list):
+                try:
+                    newInstr = Instruction(i[0], i[1], i[2], i[3])
+                except:
+                    newInstr = Instruction(None, None, None, None)
+                    print("Error adding instructions of: " +  str(self.name))
+
+                self.instructions[instrNum] = newInstr
+            elif isinstance(i, Instruction):
+                self.instructions[instrNum] = i
+            else:
+                print("error adding instruction " + str(instrNum))
+            instrNum+=1
+        
 
     def __str__(self) -> str:
 
         ingredientStr = ""
         instructionStr= ""
         for i in self.ingredients.values():
-            # ingredientDict[i.name] = [i.name, i.amount, i.stage]
             ingredientStr += f"Name:{i.name} Amount:{i.amount} Stage:{i.stage}, "
         j = 0
-        for i in self.instructions:
+        for i in self.instructions.values():
             j+=1
-            # instructionDict[j] = i.time, i.temp, i.type, i.direction
-
             instructionStr += f"Step {j}: {i.direction},"
 
-
-
-        # return recipeDict
         return f"Recipe name: {self.name}\nIngredients:[{ingredientStr}]\nInstructions:\n[{instructionStr}]"
 
     
@@ -64,21 +87,24 @@ class Recipe:
 
     def addInstruction(self, step: int, time, temp, type, direction):
         newInstruction = Instruction(time, temp, type, direction)
-        if step >= len(self.instructions):
-            self.instructions.append(newInstruction)
-        else:
-            self.instructions[step] = newInstruction
+        # if step >= len(self.instructions):
+        #     self.instructions.append(newInstruction)
+        # else:
+        self.instructions[step] = newInstruction
 
     def displayRecipe(self):
         ingredientStr = ""
         instructionStr = ""
+
+        print("values " + str(self.ingredients))
         for i in self.ingredients.values():
+            print(i)
             ingredientStr += f"\tName: {i.name}\tAmount: {i.amount}\tStage: {i.stage}\n"
 
         j = 0
-        for i in self.instructions:
+        for i in self.instructions.values():
             j+=1
-            instructionStr += f"\tStep {j}\n\t{i.direction}\n"
+            instructionStr += f"Step {j}\t{i.direction}\n"
         return f"Recipe name: {self.name} \nIngredients:\n {ingredientStr}\nInstructions: \n{instructionStr}"
 
     def toJson(self, filename):
@@ -89,7 +115,7 @@ class Recipe:
         for i in self.ingredients.values():
             ingredientDict[i.name] = [i.name, i.amount, i.stage]
         j = 0
-        for i in self.instructions:
+        for i in self.instructions.values():
             j+=1
             instructionDict[j] = [i.time, i.temp, i.type, i.direction]
 

@@ -1,5 +1,5 @@
 class Instruction:
-    def __init__(self, time, temp, type, direction):
+    def __init__(self, time: str, temp:int, type:str, direction:str):
         self.time = time
         self.temp = temp
         self.type = type
