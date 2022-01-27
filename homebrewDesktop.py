@@ -24,11 +24,11 @@ class homebrewDesktop():
 
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
 
-        pass
+        
 
     def setWorkingDir(self):
         self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Hey! Select a File')
-        pass
+        
 
     def addRecipe(self, recipe:dict):
         recipe_num = 1
@@ -52,10 +52,10 @@ class homebrewDesktop():
         ui.setupUi(self.newRecipeDialog)
 
         ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
-        ui.addIngredientButton.clicked.connect(lambda: self.setIngredientRows(ui))
-        ui.addInstructionButton.clicked.connect(lambda: self.setInstructionRows(ui))
+        ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
+        ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
 
-        self.ingreRows = 1
+        self.instrRows = 1
         self.instrRows = 1
         self.newRecipeDialog.show()
         
@@ -72,7 +72,7 @@ class homebrewDesktop():
 
         #get all ingredients
         try:
-            for i in range(self.ingreRows):
+            for i in range(self.instrRows):
                 ingre = ui.tableWidget.item(i,0).text()
                 try:
                     amnt = float(ui.tableWidget.item(i, 1).text())
@@ -125,16 +125,14 @@ class homebrewDesktop():
         newRec.toJson(name)
         self.addRecipe(newRec)
 
-    def saveRecipe(self, recipe):
-        recipe.toJson(recipe.name)
 
-    def setIngredientRows(self, ui):
-        self.ingreRows+=1
-        ui.tableWidget.setRowCount(self.ingreRows)
-
-    def setInstructionRows(self, ui):
+    def increaseInstructionRows(self, ui):
         self.instrRows+=1
-        ui.tableWidget_2.setRowCount(self.instrRows)
+        ui.tableWidget.setRowCount(self.instrRows)
+
+    def decreaseInstructionRows(self, ui):
+        self.instrRows-=1
+        ui.tableWidget.setRowCount(self.instrRows)
 
     def showSavedRecipes(self):
         print("loading recipes...")
@@ -155,7 +153,7 @@ class homebrewDesktop():
 
             loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions)
             self.addRecipe(loadedRecipe)
-            print(str(recipeDict))
+            # print(str(recipeDict))
         return recipeDict
 
     def sendData():
@@ -167,7 +165,6 @@ class homebrewDesktop():
 if __name__ == "__main__":
     testHomebrewDesktop = homebrewDesktop()
     testHomebrewDesktop.showSavedRecipes()
-    print(testHomebrewDesktop.workingDir)
 
     testHomebrewDesktop.HomebrewController.show()
 
