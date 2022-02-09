@@ -65,6 +65,7 @@ class homebrewDesktop():
         self.instrRows = 1
         self.newRecipeDialog.show()
         
+    # Get's the recipe Name
     def getRecipeName(self, ui):
         try:
             return ui.recipeName.text()
