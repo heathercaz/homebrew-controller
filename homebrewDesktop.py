@@ -13,7 +13,7 @@ import json
 class homebrewDesktop():
     def __init__(self):
         self.recipes = {};
-        self.workingDir =  os.getcwd()+"\\BeerRecipes\\"
+        self.workingDir =  os.getcwd()+"/BeerRecipes/"
 
         self.app = QtWidgets.QApplication(sys.argv)
         self.HomebrewController = QtWidgets.QMainWindow()
@@ -25,12 +25,17 @@ class homebrewDesktop():
 
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
         self.ui.deleteRecipeButton.clicked.connect(self.deleteRecipe)
+        self.ui.toolButton.clicked.connect(self.setWorkingDir)
+        
 
         
 
     def setWorkingDir(self):
-        self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Hey! Select a File')
-        
+        self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Select Working Directory')
+        self.ui.plainTextEdit.setPlainText(self.workingDir)
+        self.recipes = {}
+        self.ui.listWidget.clear()
+        self.showSavedRecipes()
 
     def addRecipe(self, recipe:dict):
         recipe_num = 1
