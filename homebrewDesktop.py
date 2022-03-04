@@ -43,7 +43,7 @@ class homebrewDesktop():
         self.ui.listWidget.addItem(listItem)
         self.recipes[recipe.name] = recipe
 
-        print(self.recipes)
+        # print(self.recipes)
 
     def previewRecipe(self):
         try: 
@@ -169,7 +169,7 @@ class homebrewDesktop():
         if not selectedRecipe:
             return
 
-        print(os.listdir(direct))
+        # print(os.listdir(direct))
         if recipeFile in os.listdir(direct):
             # remove from files
             os.remove(direct + recipeFile)

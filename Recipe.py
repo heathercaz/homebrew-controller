@@ -25,7 +25,7 @@ class Recipe:
             return 0
 
         for i in instructions.values(): 
-            print("instructions type " + str(type(i)) + "instructions: " + str(i))
+            # print("instructions type " + str(type(i)) + "instructions: " + str(i))
             if isinstance(i, list):
                 try:
                     newInstr = Instruction(i[0], i[1], i[2], i[3])
