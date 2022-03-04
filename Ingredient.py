@@ -1,7 +1,8 @@
 class Ingredient:
-    def __init__(self, name, amount, stage):
+    def __init__(self, name, amount, unit, stage):
         self.name = name 
         self.amount = amount
+        self.unit = unit
         self.stage = stage
 
     def __str__(self) -> str:
