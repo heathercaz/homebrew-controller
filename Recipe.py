@@ -104,7 +104,7 @@ class Recipe:
         print("values " + str(self.ingredients))
         for i in self.ingredients.values():
             print(i)
-            ingredientStr += f"\tName: {i.name}\tAmount: {i.amount}\tStage: {i.stage}\n"
+            ingredientStr += f"\t{i.amount} {i.unit}\t{i.name}\n"
 
         j = 0
         for i in self.instructions.values():
@@ -118,7 +118,7 @@ class Recipe:
         instructionDict= {}
 
         for i in self.ingredients.values():
-            ingredientDict[i.name] = [i.name, i.amount, i.unit, i.stage]
+            ingredientDict[i.name] = [i.name, i.amount, i.unit, i.step]
         j = 0
         for i in self.instructions.values():
             j+=1
@@ -131,11 +131,7 @@ class Recipe:
         with open(filename + ".json", "w") as outfile:
             json.dump(recipeDict, outfile)
 
-
-    def saveRecipe():
-        pass
-
-    def deleteRecipe():
+    def toSerial(self):
         pass
 
 if __name__ == "__main__":
