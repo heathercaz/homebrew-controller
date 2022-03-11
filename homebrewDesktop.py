@@ -26,8 +26,8 @@ class homebrewDesktop():
 
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
         self.ui.deleteRecipeButton.clicked.connect(self.deleteRecipe)
-
         self.ui.editRecipeButton.clicked.connect(self.editRecipe)
+
         self.ui.toolButton.clicked.connect(self.setWorkingDir)
         self.ui.plainTextEdit.setPlainText(self.workingDir)
 
@@ -49,7 +49,7 @@ class homebrewDesktop():
         self.ui.listWidget.addItem(listItem)
         self.recipes[recipe.name] = recipe
 
-        # print(self.recipes)
+        return recipe.name
 
     def previewRecipe(self):
         try: 
@@ -66,9 +66,9 @@ class homebrewDesktop():
         ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
         ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
         ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
+        ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
 
         self.instrRows = 1
-        # self.instrRows = 1
         self.newRecipeDialog.show()
         
     # Get's the recipe Name
@@ -82,7 +82,7 @@ class homebrewDesktop():
     # TODO adjust for new gui layout
     def saveNewRecipe(self, ui):
         name = self.getRecipeName(ui)
-        newRec = Recipe(name, {}, {},[])
+        newRec = Recipe(name, {}, {})
 
         #get all instructions from the table
 
@@ -96,7 +96,7 @@ class homebrewDesktop():
             try:
                 amnt = float(ui.tableWidget.item(i, 1).text())
             except:
-                amnt = 0
+                amnt = None
 
             try:
                 unit = ui.tableWidget.item(i,2).text()
@@ -107,13 +107,13 @@ class homebrewDesktop():
             try:
                 temp = float(ui.tableWidget.item(i, 3).text())
             except:
-                temp = 0
+                temp = None
 
             try:
                 time = ui.tableWidget.item(i,4).text()
                 
             except:
-                time = "0 min"
+                time = None
 
             try:
                 stage = ui.tableWidget.item(i,5).text()
@@ -128,13 +128,12 @@ class homebrewDesktop():
                 print("error adding Note")
 
             if ingre:
-                newRec.addIngredient(ingre,amnt,unit,stage)
+                newRec.addIngredient(ingre,amnt,unit,step)
             newRec.addInstruction(step, time, temp, stage, note)
             step+=1
-
-        newRec.toJson(name)
-        self.addRecipe(newRec)
-
+        newName = self.workingDir+self.addRecipe(newRec)
+        newRec.toJson(newName)
+        self.newRecipeDialog.close()
 
     def increaseInstructionRows(self, ui):
         self.instrRows+=1
@@ -156,15 +155,17 @@ class homebrewDesktop():
             if os.path.isfile(i) == False:
                 print("error")
 
-            with open(i, "r") as fo:
-                recipeDict = json.load(fo) # load json file into a dictionary
+            try:
+                with open(i, "r") as fo:
+                    recipeDict = json.load(fo) # load json file into a dictionary
+            except:
+                continue
 
             recipeName = recipeDict['name']
             recipeIngredients = recipeDict['ingredients']
             recipeInstructions = recipeDict['instructions']
-            recipeArray = recipeDict['array']
 
-            loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions, recipeArray)
+            loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions)
             self.addRecipe(loadedRecipe)
             # print(str(recipeDict))
         return recipeDict
@@ -214,7 +215,8 @@ class homebrewDesktop():
             for ingr in ingredientsList:
                 if row + 1 == thisRecipe.ingredients[ingr].step:
                     name = QTableWidgetItem(thisRecipe.ingredients[ingr].name)
-                    amnt = QTableWidgetItem(thisRecipe.ingredients[ingr].amount)
+                    print(thisRecipe.ingredients[ingr].name)
+                    amnt = QTableWidgetItem(str(thisRecipe.ingredients[ingr].amount))
                     unit = QTableWidgetItem(thisRecipe.ingredients[ingr].unit)
                     ingredientsList.remove(ingr)
 
@@ -225,7 +227,7 @@ class homebrewDesktop():
             
             #get instructions
             dur = QTableWidgetItem(thisRecipe.instructions[row + 1].time)
-            temp = QTableWidgetItem(thisRecipe.instructions[row + 1].temp)
+            temp = QTableWidgetItem(str(thisRecipe.instructions[row + 1].temp))
             stage = QTableWidgetItem(thisRecipe.instructions[row + 1].type)
             note = QTableWidgetItem(thisRecipe.instructions[row + 1].direction)
 
@@ -239,8 +241,9 @@ class homebrewDesktop():
         ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
         ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
         ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
+        ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
 
-        self.instrRows = 1
+        self.instrRows = ui.tableWidget.rowCount()
         self.newRecipeDialog.show()
 
 
