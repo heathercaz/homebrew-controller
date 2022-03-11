@@ -1,11 +1,12 @@
 class Ingredient:
-    def __init__(self, name, amount, stage):
+    def __init__(self, name, amount, unit, step):
         self.name = name 
         self.amount = amount
-        self.stage = stage
+        self.unit = unit
+        self.step = step
 
     def __str__(self) -> str:
-        return f"NAME: {self.name}  AMOUNT: {self.amount}  STAGE {self.stage}"
+        return f"NAME: {self.name}  AMOUNT: {self.amount}  step {self.step}"
 
     def getName(self):
         return self.name
@@ -14,7 +15,7 @@ class Ingredient:
         return self.amount
 
     def getStage(self):
-        return self.stage
+        return self.step
 
     def setName(self, newName):
         self.name = newName
@@ -23,4 +24,4 @@ class Ingredient:
         self.amount = newAmount
 
     def setStage(self, newStage):
-        self.stage = newStage
+        self.step = newStage

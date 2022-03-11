@@ -10,7 +10,7 @@ class Recipe:
         # check ingredient type
         for i in ingredients.values(): 
             if isinstance(i, list):
-                newIngred = Ingredient(i[0], i[1], i[2])
+                newIngred = Ingredient(i[0], i[1], i[2], i[3])
                 self.ingredients[i[0]] = newIngred
             elif isinstance(i, Ingredient):
                 self.ingredients[i.name] = i
@@ -20,8 +20,12 @@ class Recipe:
         self.instructions = {}
         # check instruction type
         instrNum = 1
+
+        if type(instructions) is not dict:
+            return 0
+
         for i in instructions.values(): 
-            print("instructions type " + str(type(i)) + "instructions: " + str(i))
+            # print("instructions type " + str(type(i)) + "instructions: " + str(i))
             if isinstance(i, list):
                 try:
                     newInstr = Instruction(i[0], i[1], i[2], i[3])
@@ -69,8 +73,8 @@ class Recipe:
     def setInstructions(self, newInstructions):
         self.instructions = newInstructions
                 
-    def addIngredient(self, name, amount, stage):
-        newIngredient = Ingredient(name, amount, stage);
+    def addIngredient(self, name, amount, unit, stage):
+        newIngredient = Ingredient(name, amount, unit, stage);
         self.ingredients[name] = newIngredient
 
     def removeIngredient(self, name):
@@ -79,11 +83,12 @@ class Recipe:
 
         del(self.ingredients[name])
 
-    def editIngredient(self, name, newName, newAmount, newStage):
+    def editIngredient(self, name, newName, newAmount, newUnit, newStage):
         if name in self.ingredients:
             self.ingredients[name].name = newName
             self.ingredients[name].amount = newAmount
             self.ingredients[name].stage = newStage
+            self.ingredients[name].unit = newUnit
 
     def addInstruction(self, step: int, time, temp, type, direction):
         newInstruction = Instruction(time, temp, type, direction)
@@ -99,7 +104,7 @@ class Recipe:
         print("values " + str(self.ingredients))
         for i in self.ingredients.values():
             print(i)
-            ingredientStr += f"\tName: {i.name}\tAmount: {i.amount}\tStage: {i.stage}\n"
+            ingredientStr += f"\t{i.amount} {i.unit}\t{i.name}\n"
 
         j = 0
         for i in self.instructions.values():
@@ -113,7 +118,7 @@ class Recipe:
         instructionDict= {}
 
         for i in self.ingredients.values():
-            ingredientDict[i.name] = [i.name, i.amount, i.stage]
+            ingredientDict[i.name] = [i.name, i.amount, i.unit, i.step]
         j = 0
         for i in self.instructions.values():
             j+=1
@@ -126,11 +131,7 @@ class Recipe:
         with open(filename + ".json", "w") as outfile:
             json.dump(recipeDict, outfile)
 
-
-    def saveRecipe():
-        pass
-
-    def deleteRecipe():
+    def toSerial(self):
         pass
 
 if __name__ == "__main__":
