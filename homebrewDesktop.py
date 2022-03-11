@@ -26,9 +26,6 @@ class homebrewDesktop():
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
         self.ui.deleteRecipeButton.clicked.connect(self.deleteRecipe)
         self.ui.toolButton.clicked.connect(self.setWorkingDir)
-        
-
-        
 
     def setWorkingDir(self):
         self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Select Working Directory')
@@ -67,7 +64,7 @@ class homebrewDesktop():
         ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
 
         self.instrRows = 1
-        self.instrRows = 1
+        # self.instrRows = 1
         self.newRecipeDialog.show()
         
     # Get's the recipe Name

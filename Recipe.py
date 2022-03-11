@@ -131,13 +131,6 @@ class Recipe:
         with open(filename + ".json", "w") as outfile:
             json.dump(recipeDict, outfile)
 
-
-    def saveRecipe():
-        pass
-
-    def deleteRecipe():
-        pass
-
 if __name__ == "__main__":
     testRecipe = Recipe("YUM BEER", {}, [0])
     testRecipe2 = Recipe("YUMMIER BEER", {}, [])
