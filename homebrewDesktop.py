@@ -14,6 +14,7 @@ class homebrewDesktop():
     def __init__(self):
         self.recipes = {};
         self.workingDir =  os.getcwd()+"/BeerRecipes/"
+        self.selectedRecipe = None
 
         self.app = QtWidgets.QApplication(sys.argv)
         self.HomebrewController = QtWidgets.QMainWindow()
@@ -25,7 +26,10 @@ class homebrewDesktop():
 
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
         self.ui.deleteRecipeButton.clicked.connect(self.deleteRecipe)
+
+        self.ui.editRecipeButton.clicked.connect(self.editRecipe)
         self.ui.toolButton.clicked.connect(self.setWorkingDir)
+        self.ui.plainTextEdit.setPlainText(self.workingDir)
 
     def setWorkingDir(self):
         self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Select Working Directory')
@@ -49,10 +53,10 @@ class homebrewDesktop():
 
     def previewRecipe(self):
         try: 
-            selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[0].text()]
+            self.selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[0].text()]
         except:
-            selectedRecipe = self.recipes[self.recipes.keys()[0]]
-        self.ui.recipePreview.setPlainText(selectedRecipe.displayRecipe())
+            self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+        self.ui.recipePreview.setPlainText(self.selectedRecipe.displayRecipe())
 
     def openNewRecipe(self):
         self.newRecipeDialog = QtWidgets.QDialog()
@@ -78,7 +82,7 @@ class homebrewDesktop():
     # TODO adjust for new gui layout
     def saveNewRecipe(self, ui):
         name = self.getRecipeName(ui)
-        newRec = Recipe(name, {}, {})
+        newRec = Recipe(name, {}, {},[])
 
         #get all instructions from the table
 
@@ -158,8 +162,9 @@ class homebrewDesktop():
             recipeName = recipeDict['name']
             recipeIngredients = recipeDict['ingredients']
             recipeInstructions = recipeDict['instructions']
+            recipeArray = recipeDict['array']
 
-            loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions)
+            loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions, recipeArray)
             self.addRecipe(loadedRecipe)
             # print(str(recipeDict))
         return recipeDict
@@ -189,7 +194,55 @@ class homebrewDesktop():
 
 
     def editRecipe(self):
-        pass
+
+        self.newRecipeDialog = QtWidgets.QDialog()
+        ui = Ui_newRecipe()
+        ui.setupUi(self.newRecipeDialog)
+        
+        if self.selectedRecipe is None:
+            self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+
+        thisRecipe = self.selectedRecipe
+        ui.recipeName.setText(self.selectedRecipe.name)
+
+        ui.tableWidget.setRowCount(len(self.selectedRecipe.instructions))
+        ingredientsList = list(thisRecipe.ingredients.keys())
+
+        for row in range(ui.tableWidget.rowCount()):
+            
+            #get ingredients
+            for ingr in ingredientsList:
+                if row + 1 == thisRecipe.ingredients[ingr].step:
+                    name = QTableWidgetItem(thisRecipe.ingredients[ingr].name)
+                    amnt = QTableWidgetItem(thisRecipe.ingredients[ingr].amount)
+                    unit = QTableWidgetItem(thisRecipe.ingredients[ingr].unit)
+                    ingredientsList.remove(ingr)
+
+                    ui.tableWidget.setItem(row, 0, name)
+                    ui.tableWidget.setItem(row, 1, amnt)
+                    ui.tableWidget.setItem(row, 2, unit)
+                    break
+            
+            #get instructions
+            dur = QTableWidgetItem(thisRecipe.instructions[row + 1].time)
+            temp = QTableWidgetItem(thisRecipe.instructions[row + 1].temp)
+            stage = QTableWidgetItem(thisRecipe.instructions[row + 1].type)
+            note = QTableWidgetItem(thisRecipe.instructions[row + 1].direction)
+
+            #populate table
+
+            ui.tableWidget.setItem(row,3, temp)
+            ui.tableWidget.setItem(row,4, dur)
+            ui.tableWidget.setItem(row,5, stage)
+            ui.tableWidget.setItem(row,6, note)
+
+        ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
+        ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
+        ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
+
+        self.instrRows = 1
+        self.newRecipeDialog.show()
+
 
     def sendData():
         pass

@@ -1,9 +1,10 @@
+from pandas import array
 from Ingredient import Ingredient
 from Instruction import Instruction
 import json
 
 class Recipe:
-    def __init__(self, name: str, ingredients: dict, instructions: dict):
+    def __init__(self, name: str, ingredients: dict, instructions: dict, builderArr: list):
         self.name = name
 
         self.ingredients = {}
@@ -39,6 +40,8 @@ class Recipe:
             else:
                 print("error adding instruction " + str(instrNum))
             instrNum+=1
+
+        self.builderArr = builderArr
         
 
     def __str__(self) -> str:
@@ -63,6 +66,9 @@ class Recipe:
 
     def getInstructions(self):
         return self.instructions
+
+    def getArray(self):
+        return self.builderArr
 
     def setName(self, newName):
         self.name = newName
@@ -104,7 +110,7 @@ class Recipe:
         print("values " + str(self.ingredients))
         for i in self.ingredients.values():
             print(i)
-            ingredientStr += f"\tName: {i.name}\tAmount: {i.amount}\tStage: {i.stage}\n"
+            ingredientStr += f"\t{i.amount} {i.unit}\t{i.name}\n"
 
         j = 0
         for i in self.instructions.values():
