@@ -3,6 +3,9 @@ import Instruction
 from Recipe import Recipe
 from homebrewGUI import Ui_HomebrewController
 from newRecipe import Ui_newRecipe
+from brewConfirmation import Ui_brewConfirmationDialog
+from recipeNotes import Ui_recipeNotes
+from fileConfirmation import Ui_OverwriteDialog
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
 import sys
@@ -27,6 +30,7 @@ class homebrewDesktop():
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
         self.ui.deleteRecipeButton.clicked.connect(self.deleteRecipe)
         self.ui.editRecipeButton.clicked.connect(self.editRecipe)
+        self.ui.pushButton.clicked.connect(self.openBrewConfirmation)
 
         self.ui.toolButton.clicked.connect(self.setWorkingDir)
         self.ui.plainTextEdit.setPlainText(self.workingDir)
@@ -63,13 +67,35 @@ class homebrewDesktop():
         ui = Ui_newRecipe()
         ui.setupUi(self.newRecipeDialog)
 
-        ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
+        ui.doneButton.clicked.connect(self.openFileConfirmation)
         ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
         ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
         ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
 
         self.instrRows = 1
         self.newRecipeDialog.show()
+
+    def openBrewConfirmation(self):
+        self.brewConfirmationDialog = QtWidgets.QDialog()
+        ui = Ui_brewConfirmationDialog()
+        ui.setupUi(self.brewConfirmationDialog)
+
+        ui.noButton.clicked.connect(self.brewConfirmationDialog.close)
+        ui.yesButton.clicked.connect(self.sendData)
+
+        self.brewConfirmationDialog.show()
+
+    def openFileConfirmation(self):
+        self.fileConfirmationDialog = QtWidgets.QDialog()
+        ui = Ui_OverwriteDialog()
+        ui.setupUi(self.fileConfirmationDialog)
+
+        ui.yesButton.clicked.connect(lambda: self.saveNewRecipe(ui))
+        ui.yesButton.clicked.connect(self.fileConfirmationDialog.close)
+        ui.noButton.clicked.connect(self.fileConfirmationDialog.close)
+
+        self.fileConfirmationDialog.show()
+
         
     # Get's the recipe Name
     def getRecipeName(self, ui):
@@ -247,10 +273,11 @@ class homebrewDesktop():
         self.newRecipeDialog.show()
 
 
-    def sendData():
-        pass
+    def sendData(self):
+        self.brewConfirmationDialog.close
+        
 
-    def receiveData():
+    def receiveData(self):
         pass
         
 if __name__ == "__main__":
