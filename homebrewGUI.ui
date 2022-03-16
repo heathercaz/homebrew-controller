@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Homebrew Controller</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../beerIcone.png</normaloff>../../beerIcone.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout" rowstretch="20" columnstretch="2,5">
     <property name="bottomMargin">

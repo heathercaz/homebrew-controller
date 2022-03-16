@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Recipe Notes</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../beerIcone.png</normaloff>../../beerIcone.png</iconset>
+  </property>
   <widget class="QTextEdit" name="notePad">
    <property name="geometry">
     <rect>

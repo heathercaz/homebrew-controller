@@ -19,6 +19,10 @@
   <property name="windowTitle">
    <string>Recipe Builder</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../beerIcone.png</normaloff>../../beerIcone.png</iconset>
+  </property>
   <property name="autoFillBackground">
    <bool>false</bool>
   </property>

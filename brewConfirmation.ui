@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Ready to brew?</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../beerIcone.png</normaloff>../../beerIcone.png</iconset>
+  </property>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
