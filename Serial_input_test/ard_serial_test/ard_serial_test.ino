@@ -1,14 +1,12 @@
 #include <EEPROM.h>
 int addr;
-volatile int button;
-int saved_val;
-volatile int saved_button;
+volatile int button; // used in button handler for button state
+int saved_val; // used for debugging
+volatile int saved_button; // holds the state of the serial mode button
 
-int ser;
+int ser; // holds incoming serial value
 
-byte serialBuf[1024];
-int bufInd = 0;
-
+// initialize retrieval addresses
 int step_addr = 3;
 int time_addr = 4;
 int timeu_addr = 5;
@@ -16,19 +14,19 @@ int temp_addr = 6;
 int stage_addr = 7;
 
 byte num_steps;
-int step_flag = 0;
-byte prev_ser;
-int step_count = 0;
+int step_flag = 0; // indicates if next message is step info
+int step_count = 0; // counts number of steps added (used as back up because of step flag bug)
+int start_flag = 0; // indicates the start of instruction info
 
+// Data struct to hold one step of a recipe instruction
 struct recipeInstructs {
-  byte step;
-  byte time;
-  byte time_unit;
-  byte temp;
-  byte stage;
+  byte step; // stored in addr = step+ 2
+  byte time; // stored in addr = step + 3
+  byte time_unit; //stored in addr = step + 4
+  byte temp; // stored in addr = step + 5
+  byte stage; // stored in addr = step + 5
 };
 
-int start_flag = 0;
 void setup()
 {
   pinMode(12, OUTPUT);
@@ -52,21 +50,27 @@ void setup()
 void loop()
 {
 
-  saved_button = EEPROM.read(0);
+  //TODO add state in which EEPROM is cleared before writing to it for new recipes
+
+  saved_button = EEPROM.read(0); // serial mode saved in address 0
   digitalWrite(7, saved_button);
   // Waits until in "serial mode" to write values
   if (Serial.available() > 0 && saved_button == 1) {
     ser = Serial.read();
 
+    // check if start byte has been read and end byte hasn't
+    // update EEPROM with new value
     if (start_flag == 1 && ser != '&') {
       EEPROM.update(addr, ser);
       addr++;
     }
 
 //    if (step_flag == 1) {
-//      EEPROM.update(2, ser);
+//      EEPROM.update(2, ser); // save number of steps in address 2
 //      step_flag == 0;
 //    }
+
+    // ! means incoming byte is total number of steps
     if (ser == '!') {
       digitalWrite(12, HIGH);
       digitalWrite(13, HIGH);
@@ -76,6 +80,8 @@ void loop()
 //      EEPROM.update(2, ser);
       step_flag = 1;
     }
+
+    // check for start byte and set start flag
     if (ser == '#') { // start char
       digitalWrite(12, LOW);
       digitalWrite(13, HIGH);
@@ -83,6 +89,7 @@ void loop()
       digitalWrite(13, LOW);
       start_flag = 1;
     }
+    //check for stop byte and reset start flag
     else if (ser == '&') { // stop char
       step_count++;
       digitalWrite(13, LOW);
@@ -131,8 +138,6 @@ void get_message() {
     timeu_addr = 5;
     temp_addr = 6;
     stage_addr = 7;
-
-
 }
 //---------------------------Interupt Handler----------------------------------------
 void button_handler() {
@@ -146,6 +151,7 @@ void button_handler() {
         EEPROM.write(i, 0);
       }
     }
+    button = EEPROM.read(0)
     button = !button;
 
 
