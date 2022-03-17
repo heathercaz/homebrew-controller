@@ -32,6 +32,8 @@ class homebrewDesktop():
         self.ui.editRecipeButton.clicked.connect(self.editRecipe)
         self.ui.pushButton.clicked.connect(self.openBrewConfirmation)
 
+        self.ui.notesButton.clicked.connect(self.openRecipeNotes)
+
         self.ui.toolButton.clicked.connect(self.setWorkingDir)
         self.ui.plainTextEdit.setPlainText(self.workingDir)
 
@@ -67,7 +69,7 @@ class homebrewDesktop():
         ui = Ui_newRecipe()
         ui.setupUi(self.newRecipeDialog)
 
-        ui.doneButton.clicked.connect(self.openFileConfirmation)
+        ui.doneButton.clicked.connect(lambda: self.openFileConfirmation(ui))
         ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
         ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
         ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
@@ -85,16 +87,34 @@ class homebrewDesktop():
 
         self.brewConfirmationDialog.show()
 
-    def openFileConfirmation(self):
+    def openFileConfirmation(self, editorUi):
         self.fileConfirmationDialog = QtWidgets.QDialog()
         ui = Ui_OverwriteDialog()
         ui.setupUi(self.fileConfirmationDialog)
+        filename = self.getRecipeName(editorUi)
 
-        ui.yesButton.clicked.connect(lambda: self.saveNewRecipe(ui))
+        if filename in self.recipes.keys():
+            ui.setMsgText(filename + " already exists. Would you like to overwrite?", "(Clicking \"No\" will create a numbered copy of the file)")
+        else:
+            ui.setMsgText("Save file as " + filename + ".json?", " ")
+
         ui.yesButton.clicked.connect(self.fileConfirmationDialog.close)
+        ui.yesButton.clicked.connect(lambda: self.overwriteRecipe(filename, editorUi))
+        
+        ui.noButton.clicked.connect(lambda: self.saveNewRecipe(editorUi))
         ui.noButton.clicked.connect(self.fileConfirmationDialog.close)
 
+        ui.cancelButton.clicked.connect(self.fileConfirmationDialog.close)
         self.fileConfirmationDialog.show()
+
+    def openRecipeNotes(self):
+        self.recipeNotesDialog = QtWidgets.QDialog()
+        ui = Ui_recipeNotes()
+        ui.setupUi(self.recipeNotesDialog)
+
+        ui.cancelButton.clicked.connect(self.recipeNotesDialog.close)
+
+        self.recipeNotesDialog.show()
 
         
     # Get's the recipe Name
@@ -105,7 +125,7 @@ class homebrewDesktop():
         except:
             return "untitled"
 
-    # TODO adjust for new gui layout
+
     def saveNewRecipe(self, ui):
         name = self.getRecipeName(ui)
         newRec = Recipe(name, {}, {})
@@ -196,6 +216,26 @@ class homebrewDesktop():
             # print(str(recipeDict))
         return recipeDict
 
+    def overwriteRecipe(self, filename, editorUi):
+        direct = self.workingDir
+        recipeFile = filename+'.json'
+        # print(os.listdir(direct))
+        if recipeFile in os.listdir(direct):
+            # remove from files
+            os.remove(direct + recipeFile)
+            
+            #remove from recipe dictionary
+            self.recipes.pop(filename)
+
+            # delete from list widget in gui
+            ind = self.ui.listWidget.currentIndex().row()
+            self.ui.listWidget.takeItem(ind)
+
+        else:
+            print("The file: " + recipeFile +" does not exist")
+
+        self.saveNewRecipe(editorUi)
+
     def deleteRecipe(self):
         direct = self.workingDir
         selectedRecipe = self.ui.listWidget.selectedItems()[0]
@@ -264,7 +304,7 @@ class homebrewDesktop():
             ui.tableWidget.setItem(row,5, stage)
             ui.tableWidget.setItem(row,6, note)
 
-        ui.doneButton.clicked.connect(lambda: self.saveNewRecipe(ui))
+        ui.doneButton.clicked.connect(lambda: self.openFileConfirmation(ui))
         ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
         ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
         ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
