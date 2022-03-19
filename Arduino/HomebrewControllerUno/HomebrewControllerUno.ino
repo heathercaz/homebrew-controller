@@ -24,6 +24,7 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
 int fermentor1Pin = 7;
 int heaterPin = 12;
 int chillerPin = 13;
+int buzzerPin = 11;
 
 //Declare global variables 
 
@@ -37,6 +38,7 @@ int chillerPin = 13;
   
   unsigned long lastDebounceTime = 0;               // This is reset to millis() each time a switch is pressed
   unsigned long debounceDelay = 150;                // Debounce delay, 200ms seems like a good balance
+  unsigned long BuzzerLength = 1000;
 
  //Stage Info Default Declarations
   bool parserGate = false;
@@ -181,6 +183,15 @@ void loop() {
   }
   kettleMinutes = kettleTime/60000;
   kettleSeconds = (kettleTime%60000)/1000;
+
+// BUZZER CONTROL
+
+  if ((kettleMinutes == 0) && (kettleSeconds == 1)){
+    digitalWrite(buzzerPin,HIGH);   
+  }
+  else {
+    digitalWrite(buzzerPin,LOW);
+  }
 
 // HEATER CONTROL
   int heaterTarget = stageTemp[stageNumber-1];
