@@ -11,7 +11,7 @@ LiquidCrystal_I2C lcd1(0x27, 16, 2);
 LiquidCrystal_I2C lcd2(0x26, 16, 2);
 
 //Declare Pin Usage
-int startButton = 0; int previousButton = 1; int nextButton = 2;    // Assign button pins
+int startButton = 8; int previousButton = 9; int nextButton = 10;    // Assign button pins
 int startReadOld = 1; int previousReadOld = 1; int nextReadOld = 1; // Button Initializations
 
 //One wire usage:
@@ -19,9 +19,12 @@ int startReadOld = 1; int previousReadOld = 1; int nextReadOld = 1; // Button In
 OneWire oneWire(ONE_WIRE_BUS);                        // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 DallasTemperature sensors(&oneWire);                  // Pass our oneWire reference to Dallas Temperature.
 
+//Equipment Relay Pins
 
 int fermentor1Pin = 7;
-int heaterPin = 10;
+int heaterPin = 12;
+int chillerPin = 13;
+int buzzerPin = 11;
 
 //Declare global variables 
 
@@ -30,23 +33,28 @@ int heaterPin = 10;
   int nextRead;
   bool stageState = false;
   int stageNumber = 1;
+  int f1Temp;
                                             
   
   unsigned long lastDebounceTime = 0;               // This is reset to millis() each time a switch is pressed
   unsigned long debounceDelay = 150;                // Debounce delay, 200ms seems like a good balance
+  unsigned long BuzzerLength = 1000;
 
  //Stage Info Default Declarations
   bool parserGate = false;
   int totalStages = 5;
-  int stageName[] = {0,1,2,1,2};  //Stage "name" codes to be displayed on LCD from stageNames
+  int stageName[] = {0,3,2,1,4};  //Stage "name" codes to be displayed on LCD from stageNames
   //int *stageTemp = (int *) malloc(totalStages * sizeof(int));
-  int stageTemp[] = {25,30,40,50,30};                                          //Stage target temp in C
+  int stageTemp[] = {30,40,25,70,10};                                          //Stage target temp in C
   //int *stageTime = (int *) malloc(totalStages * sizeof(int));
-  int stageTime[] = {3,3,4,6,2};
-  int stageDevice[] = {1,1,2,1,2}; //1 for kettle, 2 for chiller, 3 for fermenter 1, etc...
+  int stageTime[] = {2,4,3,15,12};
+  int stageDevice[] = {1,1,2,1,3}; //1 for kettle, 2 for chiller, 3 for fermenter 1, etc...
+
+  int fermentorState[3] = {0,0,0}; //EG Fermentor 1 running, 2 and 3 off. 1 should be set to 0 once that fermentor is finished running based on timer
+  int f1Target = 27;               //EG Fermentor 1 target temp is 27C
 
 //  int stageName[50];
-  String stageNames[] = {"PREHEAT","HEATING","CHILLING"};             //Stage "name" to be displayed on LCD
+  String stageNames[] = {"PREHEAT","HEATING","CHILLING","MASHING","FERMENTATION"};             //Stage "name" to be displayed on LCD
 //  int stageTemp[50];                                                  //Stage target temp in C
 //  int stageTime[50];                                                  //Stage time in minutes
 
@@ -88,13 +96,33 @@ void loop() {
 
 
 //FERMENTOR CONTROL
-  int fermentorState[3] = {1,0,0}; //EG Fermentor 1 running, 2 and 3 off. 1 should be set to 0 once that fermentor is finished running based on timer
-  int f1Target = 24;               //EG Fermentor 1 target temp is 24C
 
   if (fermentorState[0] == 1){
-  int f1Temp = fermentor1(f1Target);
+    //lcd2.clear();
+    f1Temp = fermentor1(f1Target);
+    
   }
   
+  else{
+    digitalWrite(fermentor1Pin,LOW);  
+  }
+
+  Serial.println(f1Temp);
+  if (stageDevice[stageNumber-1] == 3){
+    if ((stageState == true) && (fermentorState[0] == 0)){
+      fermentorState[0] = 1;
+      lcd2.setCursor(12,0);
+      lcd2.print("  ON");
+      stageState = false;
+    }
+    if ((stageState == true) && (fermentorState[0] == 1)){
+      fermentorState[0] = 0;
+      lcd2.setCursor(12,0);
+      lcd2.print(" OFF"); 
+      stageState = false;
+    }
+  }
+
  
 //STAGE & BUTTON CONTROL OPERATION
   
@@ -156,30 +184,54 @@ void loop() {
   kettleMinutes = kettleTime/60000;
   kettleSeconds = (kettleTime%60000)/1000;
 
+// BUZZER CONTROL
+
+  if ((kettleMinutes == 0) && (kettleSeconds == 1)){
+    digitalWrite(buzzerPin,HIGH);   
+  }
+  else {
+    digitalWrite(buzzerPin,LOW);
+  }
+
 // HEATER CONTROL
   int heaterTarget = stageTemp[stageNumber-1];
   int kettleTempRead = sensors.getTempCByIndex(0);
-  Serial.println(sensors.getTempCByIndex(0));
+  //Serial.println(sensors.getTempCByIndex(0));
   
-  if (stageState==true && stageDevice[stageNumber-1]==1 ){
+  if ((stageState==true) && (stageDevice[stageNumber-1]==1) ){
     
   int kettleTemp = heater(heaterTarget, kettleTempRead);
   }
 
+  else{
+    digitalWrite(heaterPin,LOW);  
+  }
+
+// CHILLER CONTROL
   
-// STAGE INFORMATION DISPLAY
+  if (stageState==true && stageDevice[stageNumber-1]==2 ){
+    
+  int kettleTemp = chiller(heaterTarget, kettleTempRead);
+  }
+  else{
+    digitalWrite(chillerPin,LOW);  
+  }
+
+    
+// STAGE INFORMATION DISPLAY / LCD CODE
   //lcd1.clear();
   lcd1.setCursor(0,0);
   lcd1.print("S" + String(stageNumber) + " :" + stageNames[stageName[stageNumber-1]]);    //LCD1 Stage number, name, state
   lcd1.setCursor(13,0);
-  if (stageState == true){
+  if ((stageState == true) && (stageDevice[stageNumber-1] != 3)){
     lcd1.print("ON ");
     lcd1.setCursor(0,0);     
   }
-  if (stageState == false) {
+  if (stageState == false  && (stageDevice[stageNumber-1] != 3)) {
     lcd1.print("OFF");
     lcd1.setCursor(0,0);
   }
+ 
   
   lcd1.setCursor(0,1);
   lcd1.print(String(kettleMinutes) + ":" + String(kettleSeconds));             //LCD1 Time Remaining
@@ -188,6 +240,13 @@ void loop() {
   lcd1.setCursor(11,1);
   lcd1.print(String(kettleTempRead)+"C");
   lcd1.setCursor(0,0);
+
+  //Fermentor LCD:
+  lcd2.setCursor(0,0);  
+  lcd2.print("FERMENTOR 1:");
+  lcd2.setCursor(0,1);
+  lcd2.print(String(f1Temp) + "C");
+  lcd2.setCursor(0,0);
 
   //Serial.println("S" + String(stageNumber) + " :" + String(stageNames[stageName[stageNumber-1]])+ " " + String(kettleMinutes) + ":" + String(kettleSeconds) +" " + String(stageTemp[stageNumber-1])+"C"); 
   
@@ -199,7 +258,7 @@ void loop() {
 
 //----------- FUNCTIONS----------------------------------------------------------------------------
 
-float fermentor1(int f1Target){                       //FERMENTOR 1 OPERATION FUNCTION, RETURNS FERMENTER 1 TEMP
+int fermentor1(int f1Target){                       //FERMENTOR 1 OPERATION FUNCTION, RETURNS FERMENTER 1 TEMP
     float f1TempData = mlx.readObjectTempC();
     int f1Temp = f1TempData;
     if (f1Temp > f1Target){
@@ -208,24 +267,34 @@ float fermentor1(int f1Target){                       //FERMENTOR 1 OPERATION FU
     else{
       digitalWrite(fermentor1Pin,LOW);
     }
-    lcd2.print("F1:"+ String(f1Temp));
-    lcd2.setCursor(5,0);
-    lcd2.print("C");
-    lcd2.setCursor(0,0);
-    return(f1TempData);
+
+    return(f1Temp);
 }
 
-float heater(int heaterTarget, int kettleTempRead)             // HEATER OPERATION FUCNTION
+int heater(int heaterTarget, int kettleTempRead)             // HEATER OPERATION FUNCTION
 {
 //  method 1 - slower
   
-  if (kettleTempRead < heaterTarget){
+  if ((kettleTempRead < heaterTarget) && (stageState == 1)){
     digitalWrite(heaterPin,HIGH);
   }
   else{
     digitalWrite(heaterPin,LOW);
   }
 } 
+
+int chiller(int heaterTarget, int kettleTempRead)             // CHILLER OPERATION FUNCTION
+{
+  
+  if (kettleTempRead > heaterTarget){
+    digitalWrite(chillerPin,HIGH);
+  }
+  else{
+    digitalWrite(chillerPin,LOW);
+  }
+} 
+
+
 //Serial.print(" Temp F: ");
 //Serial.print(sensors.getTempF(deviceAddress)); // Makes a second call to getTempC and then converts to Fahrenheit
 
