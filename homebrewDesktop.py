@@ -1,22 +1,35 @@
-import Ingredient
-import Instruction
+#import classes
 from Recipe import Recipe
+from brewHistory import BrewHistory
+
+#Import GUI fils
 from homebrewGUI import Ui_HomebrewController
 from newRecipe import Ui_newRecipe
+from newRecipeNote import Ui_newRecipeNote
 from brewConfirmation import Ui_brewConfirmationDialog
+from deleteConfirmation import Ui_DeleteConfirmationDialog
 from recipeNotes import Ui_recipeNotes
 from fileConfirmation import Ui_OverwriteDialog
+
+#import necessary PyQt libraries
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
+
+#import other libraries
 import sys
 import os
 import json
+import time
+import serial
+import time
 
 # pyuic5 -x homebrewGUI.ui -o homebrewGUI.py
+
+
 class homebrewDesktop():
     def __init__(self):
-        self.recipes = {};
-        self.workingDir =  os.getcwd()+"/BeerRecipes/"
+        self.recipes = {}
+        self.workingDir = os.getcwd()+"/BeerRecipes/"
         self.selectedRecipe = None
 
         self.app = QtWidgets.QApplication(sys.argv)
@@ -25,10 +38,18 @@ class homebrewDesktop():
 
         self.ui.setupUi(self.HomebrewController)
 
+        self.showSavedRecipes()
+
+        try:
+            self.selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[
+                0].text()]
+        except:
+            self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+
         self.ui.listWidget.itemSelectionChanged.connect(self.previewRecipe)
 
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
-        self.ui.deleteRecipeButton.clicked.connect(self.deleteRecipe)
+        self.ui.deleteRecipeButton.clicked.connect(self.openDeleteConfirmation)
         self.ui.editRecipeButton.clicked.connect(self.editRecipe)
         self.ui.pushButton.clicked.connect(self.openBrewConfirmation)
 
@@ -38,18 +59,19 @@ class homebrewDesktop():
         self.ui.plainTextEdit.setPlainText(self.workingDir)
 
     def setWorkingDir(self):
-        self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(testHomebrewDesktop.HomebrewController, 'Select Working Directory')
+        self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(
+            testHomebrewDesktop.HomebrewController, 'Select Working Directory')
         self.ui.plainTextEdit.setPlainText(self.workingDir)
         self.recipes = {}
         self.ui.listWidget.clear()
         self.showSavedRecipes()
 
-    def addRecipe(self, recipe:dict):
+    def addRecipe(self, recipe: dict):
         recipe_num = 1
         original_name = recipe.name
-        while recipe.name in self.recipes.keys(): # Make sure there are no repeated recipe names
+        while recipe.name in self.recipes.keys():  # Make sure there are no repeated recipe names
             recipe.name = original_name + str(recipe_num)
-            recipe_num+=1
+            recipe_num += 1
 
         listItem = QListWidgetItem(recipe.name)
         self.ui.listWidget.addItem(listItem)
@@ -58,8 +80,9 @@ class homebrewDesktop():
         return recipe.name
 
     def previewRecipe(self):
-        try: 
-            self.selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[0].text()]
+        try:
+            self.selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[
+                0].text()]
         except:
             self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
         self.ui.recipePreview.setPlainText(self.selectedRecipe.displayRecipe())
@@ -70,20 +93,36 @@ class homebrewDesktop():
         ui.setupUi(self.newRecipeDialog)
 
         ui.doneButton.clicked.connect(lambda: self.openFileConfirmation(ui))
-        ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
-        ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
+        ui.addInstructionButton.clicked.connect(
+            lambda: self.increaseInstructionRows(ui))
+        ui.removeInstructionButton.clicked.connect(
+            lambda: self.decreaseInstructionRows(ui))
         ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
 
         self.instrRows = 1
         self.newRecipeDialog.show()
+
+    def openDeleteConfirmation(self):
+        self.deleteConfirmationDialog = QtWidgets.QDialog()
+        ui = Ui_DeleteConfirmationDialog()
+        ui.setupUi(self.deleteConfirmationDialog)
+
+        filename = self.selectedRecipe.getName()
+        # print(filename)
+        ui.label.setText("Are you sure you want to delete " + filename + "?")
+
+        ui.yesButton.clicked.connect(lambda: self.deleteRecipe(filename))
+        ui.yesButton.clicked.connect(self.deleteConfirmationDialog.close)
+        ui.noButton.clicked.connect(self.deleteConfirmationDialog.close)
+        self.deleteConfirmationDialog.show()
 
     def openBrewConfirmation(self):
         self.brewConfirmationDialog = QtWidgets.QDialog()
         ui = Ui_brewConfirmationDialog()
         ui.setupUi(self.brewConfirmationDialog)
 
-        ui.noButton.clicked.connect(self.brewConfirmationDialog.close)
-        ui.yesButton.clicked.connect(self.sendData)
+        ui.yesButton.clicked.connect(self.brewConfirmationDialog.close)
+        ui.sendButton.clicked.connect(lambda: self.sendData(ui))
 
         self.brewConfirmationDialog.show()
 
@@ -94,13 +133,15 @@ class homebrewDesktop():
         filename = self.getRecipeName(editorUi)
 
         if filename in self.recipes.keys():
-            ui.setMsgText(filename + " already exists. Would you like to overwrite?", "(Clicking \"No\" will create a numbered copy of the file)")
+            ui.setMsgText(filename + " already exists. Would you like to overwrite?",
+                          "(Clicking \"No\" will create a numbered copy of the file)")
         else:
             ui.setMsgText("Save file as " + filename + ".json?", " ")
 
         ui.yesButton.clicked.connect(self.fileConfirmationDialog.close)
-        ui.yesButton.clicked.connect(lambda: self.overwriteRecipe(filename, editorUi))
-        
+        ui.yesButton.clicked.connect(
+            lambda: self.overwriteRecipe(filename, editorUi))
+
         ui.noButton.clicked.connect(lambda: self.saveNewRecipe(editorUi))
         ui.noButton.clicked.connect(self.fileConfirmationDialog.close)
 
@@ -113,11 +154,63 @@ class homebrewDesktop():
         ui.setupUi(self.recipeNotesDialog)
 
         ui.cancelButton.clicked.connect(self.recipeNotesDialog.close)
+        ui.newButton.clicked.connect(self.openNewRecipeNote)
 
         self.recipeNotesDialog.show()
 
-        
+    def openNewRecipeNote(self):
+        self.newRecipeNotesDialog = QtWidgets.QDialog()
+        ui = Ui_newRecipeNote()
+        ui.setupUi(self.newRecipeNotesDialog)
+
+        ui.cancelButton.clicked.connect(self.newRecipeNotesDialog.close)
+        ui.doneButton.clicked.connect(lambda: self.addNewRecipeNote(ui))
+        ui.doneButton.clicked.connect(self.newRecipeNotesDialog.close)
+        self.newRecipeNotesDialog.show()
+
+    def addNewRecipeNote(self, ui):
+        try:
+            selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[
+                0].text()]
+        except:
+            selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+
+        try:
+            date = ui.dateText.text()
+        except:
+            date = None
+
+        try:
+            batchSize = ui.batchText.text()
+        except:
+            batchSize = None
+
+        try:
+            sg = ui.sgText.text()
+        except:
+            sg = None
+
+        try:
+            ibu = ui.ibuText.text()
+        except:
+            ibu = None
+
+        try:
+            abv = ui.abvText.text()
+        except:
+            abv = None
+
+        try:
+            notes = ui.noteSection.toPlainText()
+        except:
+            notes = None
+
+        newBrewHistory = BrewHistory(date, batchSize, sg, ibu, abv, notes)
+        selectedRecipe.addBrewHistory(newBrewHistory, date)
+        print(str(selectedRecipe.brewHistory[date]))
+
     # Get's the recipe Name
+
     def getRecipeName(self, ui):
         try:
             return ui.recipeName.text()
@@ -125,17 +218,16 @@ class homebrewDesktop():
         except:
             return "untitled"
 
-
     def saveNewRecipe(self, ui):
         name = self.getRecipeName(ui)
         newRec = Recipe(name, {}, {})
 
-        #get all instructions from the table
+        # get all instructions from the table
 
         step = 1
         for i in range(self.instrRows):
             try:
-                ingre = ui.tableWidget.item(i,0).text()
+                ingre = ui.tableWidget.item(i, 0).text()
             except:
                 ingre = None
 
@@ -145,8 +237,8 @@ class homebrewDesktop():
                 amnt = None
 
             try:
-                unit = ui.tableWidget.item(i,2).text()
-            
+                unit = ui.tableWidget.item(i, 2).text()
+
             except:
                 unit = None
 
@@ -156,44 +248,44 @@ class homebrewDesktop():
                 temp = None
 
             try:
-                time = ui.tableWidget.item(i,4).text()
-                
+                time = ui.tableWidget.item(i, 4).text()
+
             except:
                 time = None
 
             try:
-                stage = ui.tableWidget.item(i,5).text()
+                stage = ui.tableWidget.item(i, 5).text()
             except:
                 stage = None
                 print("error adding stage")
 
-            try: 
-                note = ui.tableWidget.item(i,6).text()
+            try:
+                note = ui.tableWidget.item(i, 6).text()
             except:
                 note = None
                 print("error adding Note")
 
             if ingre:
-                newRec.addIngredient(ingre,amnt,unit,step)
+                newRec.addIngredient(ingre, amnt, unit, step)
             newRec.addInstruction(step, time, temp, stage, note)
-            step+=1
+            step += 1
         newName = self.workingDir+self.addRecipe(newRec)
         newRec.toJson(newName)
         self.newRecipeDialog.close()
 
     def increaseInstructionRows(self, ui):
-        self.instrRows+=1
+        self.instrRows += 1
         ui.tableWidget.setRowCount(self.instrRows)
 
     def decreaseInstructionRows(self, ui):
-        self.instrRows-=1
+        self.instrRows -= 1
         ui.tableWidget.setRowCount(self.instrRows)
 
     def showSavedRecipes(self):
         print("loading recipes...")
         # TODO Change Beer Recipes to selected directory
         direct = self.workingDir
-        # direct = os.getcwd()+"\\BeerRecipes\\"  # Get recipes from Directory. 
+        # direct = os.getcwd()+"\\BeerRecipes\\"  # Get recipes from Directory.
         recipeDict = {}
 
         for filename in os.listdir(direct):
@@ -203,7 +295,8 @@ class homebrewDesktop():
 
             try:
                 with open(i, "r") as fo:
-                    recipeDict = json.load(fo) # load json file into a dictionary
+                    # load json file into a dictionary
+                    recipeDict = json.load(fo)
             except:
                 continue
 
@@ -211,7 +304,8 @@ class homebrewDesktop():
             recipeIngredients = recipeDict['ingredients']
             recipeInstructions = recipeDict['instructions']
 
-            loadedRecipe = Recipe(recipeName, recipeIngredients, recipeInstructions)
+            loadedRecipe = Recipe(
+                recipeName, recipeIngredients, recipeInstructions)
             self.addRecipe(loadedRecipe)
             # print(str(recipeDict))
         return recipeDict
@@ -223,8 +317,8 @@ class homebrewDesktop():
         if recipeFile in os.listdir(direct):
             # remove from files
             os.remove(direct + recipeFile)
-            
-            #remove from recipe dictionary
+
+            # remove from recipe dictionary
             self.recipes.pop(filename)
 
             # delete from list widget in gui
@@ -232,14 +326,14 @@ class homebrewDesktop():
             self.ui.listWidget.takeItem(ind)
 
         else:
-            print("The file: " + recipeFile +" does not exist")
+            print("The file: " + recipeFile + " does not exist")
 
         self.saveNewRecipe(editorUi)
 
-    def deleteRecipe(self):
+    def deleteRecipe(self, selectedRecipe):
         direct = self.workingDir
-        selectedRecipe = self.ui.listWidget.selectedItems()[0]
-        recipeFile = selectedRecipe.text()+'.json'
+        # selectedRecipe = self.ui.listWidget.selectedItems()[0]
+        recipeFile = selectedRecipe+'.json'
 
         if not selectedRecipe:
             return
@@ -248,24 +342,23 @@ class homebrewDesktop():
         if recipeFile in os.listdir(direct):
             # remove from files
             os.remove(direct + recipeFile)
-            
-            #remove from recipe dictionary
-            self.recipes.pop(selectedRecipe.text())
+
+            # remove from recipe dictionary
+            self.recipes.pop(selectedRecipe)
 
             # delete from list widget in gui
             ind = self.ui.listWidget.currentIndex().row()
             self.ui.listWidget.takeItem(ind)
 
         else:
-            print("The file: " + recipeFile +"does not exist")
-
+            print("The file: " + recipeFile + "does not exist")
 
     def editRecipe(self):
 
         self.newRecipeDialog = QtWidgets.QDialog()
         ui = Ui_newRecipe()
         ui.setupUi(self.newRecipeDialog)
-        
+
         if self.selectedRecipe is None:
             self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
 
@@ -276,13 +369,14 @@ class homebrewDesktop():
         ingredientsList = list(thisRecipe.ingredients.keys())
 
         for row in range(ui.tableWidget.rowCount()):
-            
-            #get ingredients
+
+            # get ingredients
             for ingr in ingredientsList:
                 if row + 1 == thisRecipe.ingredients[ingr].step:
                     name = QTableWidgetItem(thisRecipe.ingredients[ingr].name)
                     print(thisRecipe.ingredients[ingr].name)
-                    amnt = QTableWidgetItem(str(thisRecipe.ingredients[ingr].amount))
+                    amnt = QTableWidgetItem(
+                        str(thisRecipe.ingredients[ingr].amount))
                     unit = QTableWidgetItem(thisRecipe.ingredients[ingr].unit)
                     ingredientsList.remove(ingr)
 
@@ -290,39 +384,50 @@ class homebrewDesktop():
                     ui.tableWidget.setItem(row, 1, amnt)
                     ui.tableWidget.setItem(row, 2, unit)
                     break
-            
-            #get instructions
+
+            # get instructions
             dur = QTableWidgetItem(thisRecipe.instructions[row + 1].time)
             temp = QTableWidgetItem(str(thisRecipe.instructions[row + 1].temp))
             stage = QTableWidgetItem(thisRecipe.instructions[row + 1].type)
             note = QTableWidgetItem(thisRecipe.instructions[row + 1].direction)
 
-            #populate table
+            # populate table
 
-            ui.tableWidget.setItem(row,3, temp)
-            ui.tableWidget.setItem(row,4, dur)
-            ui.tableWidget.setItem(row,5, stage)
-            ui.tableWidget.setItem(row,6, note)
+            ui.tableWidget.setItem(row, 3, temp)
+            ui.tableWidget.setItem(row, 4, dur)
+            ui.tableWidget.setItem(row, 5, stage)
+            ui.tableWidget.setItem(row, 6, note)
 
         ui.doneButton.clicked.connect(lambda: self.openFileConfirmation(ui))
-        ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
-        ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
+        ui.addInstructionButton.clicked.connect(
+            lambda: self.increaseInstructionRows(ui))
+        ui.removeInstructionButton.clicked.connect(
+            lambda: self.decreaseInstructionRows(ui))
         ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
 
         self.instrRows = ui.tableWidget.rowCount()
         self.newRecipeDialog.show()
 
+    def sendData(self, ui):
+        ui.statusLabel.setText("Sending data. Do not disconnect")
+        ser = serial.Serial('COM3', 9600) #Connect to Com3, baud = 9600
+        time.sleep(2) # Need this or race condition will happen!!
 
-    def sendData(self):
-        self.brewConfirmationDialog.close
-        
+        serialArr = self.selectedRecipe.toSerial()
+        print(serialArr)
+        for b in serialArr:
+            ser.write(b)
+
+
+        ui.statusLabel.setText("Sending Complete")
+        # self.brewConfirmationDialog.close()
 
     def receiveData(self):
         pass
-        
+
+
 if __name__ == "__main__":
     testHomebrewDesktop = homebrewDesktop()
-    testHomebrewDesktop.showSavedRecipes()
 
     testHomebrewDesktop.HomebrewController.show()
 
