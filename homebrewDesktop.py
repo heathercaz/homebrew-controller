@@ -20,13 +20,13 @@ import sys
 import os
 import json
 import time
-# import serial
+import serial
 import time
 
 class homebrewDesktop():
     def __init__(self):
         self.recipes = {}
-        self.workingDir = os.getcwd()#+"/BeerRecipes/"
+        self.workingDir = os.getcwd()
         self.selectedRecipe = None
 
         self.app = QtWidgets.QApplication(sys.argv)
@@ -174,6 +174,7 @@ class homebrewDesktop():
         self.newRecipeNotesDialog.show()
 
     def addNewRecipeNote(self, ui):
+        # TODO finish this
         try:
             selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[
                 0].text()]
@@ -341,7 +342,6 @@ class homebrewDesktop():
 
     def deleteRecipe(self, selectedRecipe):
         direct = self.workingDir
-        # selectedRecipe = self.ui.listWidget.selectedItems()[0]
         recipeFile = selectedRecipe+'.json'
 
         if not selectedRecipe:
