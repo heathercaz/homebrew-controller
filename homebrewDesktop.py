@@ -20,11 +20,8 @@ import sys
 import os
 import json
 import time
-import serial
+# import serial
 import time
-
-# pyuic5 -x homebrewGUI.ui -o homebrewGUI.py
-
 
 class homebrewDesktop():
     def __init__(self):
@@ -213,7 +210,10 @@ class homebrewDesktop():
 
     def getRecipeName(self, ui):
         try:
-            return ui.recipeName.text()
+            if ui.recipeName.text() == "":
+                return "untitled"
+            else:
+                return ui.recipeName.text()
 
         except:
             return "untitled"
@@ -257,13 +257,11 @@ class homebrewDesktop():
                 stage = ui.tableWidget.item(i, 5).text()
             except:
                 stage = None
-                print("error adding stage")
 
             try:
                 note = ui.tableWidget.item(i, 6).text()
             except:
                 note = None
-                print("error adding Note")
 
             if ingre:
                 newRec.addIngredient(ingre, amnt, unit, step)
@@ -278,7 +276,10 @@ class homebrewDesktop():
         ui.tableWidget.setRowCount(self.instrRows)
 
     def decreaseInstructionRows(self, ui):
-        self.instrRows -= 1
+        if self.instrRows == 0:
+            self.instrRows = 0
+        else:
+            self.instrRows -= 1
         ui.tableWidget.setRowCount(self.instrRows)
 
     def showSavedRecipes(self):
