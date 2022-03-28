@@ -410,17 +410,24 @@ class homebrewDesktop():
 
     def sendData(self, ui):
         ui.statusLabel.setText("Sending data. Do not disconnect")
+        #TODO Add com port selection in gui
         ser = serial.Serial('COM3', 9600) #Connect to Com3, baud = 9600
         time.sleep(2) # Need this or race condition will happen!!
 
         serialArr = self.selectedRecipe.toSerial()
         print(serialArr)
+        bytesSent = 0
         for b in serialArr:
             ser.write(b)
+            print(b)
+            bytesSent+=1
+            if bytesSent >= 60:
+                time.sleep(1) # give the arduino time to empty buffer
+                bytesSent = 0
 
+        #TODO add Fermentor info
 
         ui.statusLabel.setText("Sending Complete")
-        # self.brewConfirmationDialog.close()
 
     def receiveData(self):
         pass
