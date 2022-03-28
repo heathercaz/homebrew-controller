@@ -26,7 +26,7 @@ import time
 class homebrewDesktop():
     def __init__(self):
         self.recipes = {}
-        self.workingDir = os.getcwd()+"/BeerRecipes/"
+        self.workingDir = os.getcwd()#+"/BeerRecipes/"
         self.selectedRecipe = None
 
         self.app = QtWidgets.QApplication(sys.argv)
@@ -41,7 +41,11 @@ class homebrewDesktop():
             self.selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[
                 0].text()]
         except:
-            self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+            if len(self.recipes) > 0:
+                self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+            else:
+                self.selectedRecipe = Recipe("None Selected", {}, {})
+            
 
         self.ui.listWidget.itemSelectionChanged.connect(self.previewRecipe)
 
@@ -81,7 +85,11 @@ class homebrewDesktop():
             self.selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[
                 0].text()]
         except:
-            self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+            if len(self.recipes) > 0:
+                self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
+            else:
+                self.selectedRecipe = Recipe("None Selected", {}, {})
+            
         self.ui.recipePreview.setPlainText(self.selectedRecipe.displayRecipe())
 
     def openNewRecipe(self):
@@ -386,9 +394,14 @@ class homebrewDesktop():
                     ui.tableWidget.setItem(row, 2, unit)
                     break
 
+            if thisRecipe.instructions[row + 1].temp == None:
+                temp = QTableWidgetItem("")
+            else:
+                temp = QTableWidgetItem(str(thisRecipe.instructions[row + 1].temp))
+
             # get instructions
             dur = QTableWidgetItem(thisRecipe.instructions[row + 1].time)
-            temp = QTableWidgetItem(str(thisRecipe.instructions[row + 1].temp))
+            
             stage = QTableWidgetItem(thisRecipe.instructions[row + 1].type)
             note = QTableWidgetItem(thisRecipe.instructions[row + 1].direction)
 
