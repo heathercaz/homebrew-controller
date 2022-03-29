@@ -15,27 +15,37 @@ int stage_addr = 7;
 
 byte num_steps;
 int step_flag = 0; // indicates if next message is step info
-int step_count = 0; // counts number of steps added (used as back up because of step flag bug)
+int step_count = 1; // counts number of steps added (used as back up because of step flag bug)
 int start_flag = 0; // indicates the start of instruction info
+
+int clear_button = 0;
+int clear_button_state= 0;
+
+static unsigned long last_clear_button_time = 0;
+unsigned long clear_button_time = millis();
 
 // Data struct to hold one step of a recipe instruction
 struct recipeInstructs {
-  byte step; // stored in addr = step+ 2
-  byte time; // stored in addr = step + 3
-  byte time_unit; //stored in addr = step + 4
-  byte temp; // stored in addr = step + 5
-  byte stage; // stored in addr = step + 5
+  byte step; // stored in addr = step*5 - 2
+  byte time; // stored in addr = step*5 - 1
+  char time_unit; //stored in addr = step*5
+  byte temp; // stored in addr = step*5 + 1
+  byte stage; // stored in addr = step*5 + 2
 };
+
+const char *stages[] = {"None","preheat", "heating", "mashing", "sparging", "fermenting", "chilling"};
 
 void setup()
 {
-  pinMode(12, OUTPUT);
-  pinMode(13, OUTPUT);
-  pinMode(7, OUTPUT);
-  pinMode(2, INPUT_PULLUP);
-  digitalWrite(7, LOW);
-  digitalWrite(12, LOW);
-  digitalWrite(13, LOW);
+  pinMode(12, OUTPUT);// yellow light
+  pinMode(13, OUTPUT);// red light
+  pinMode(7, OUTPUT);// green light
+  pinMode(8, OUTPUT);// blue light
+  pinMode(2, INPUT_PULLUP); //serial mode button
+  pinMode(4, INPUT); // Clear EEPROM
+  digitalWrite(7, LOW); 
+  digitalWrite(12, LOW); 
+  digitalWrite(13, LOW); 
 
   Serial.begin(9600);
   button = 0;
@@ -50,14 +60,37 @@ void setup()
 void loop()
 {
 
-  //TODO add state in which EEPROM is cleared before writing to it for new recipes
+ //Used to clear EEPROM if pressed
+  clear_button = digitalRead(4);
+  if (clear_button){
+    last_clear_button_time = 0;
+    clear_button_time = millis();
+    if (clear_button_time - last_clear_button_time > 200){
+    clear_button_state = !clear_button_state;
+    }
+    last_clear_button_time = clear_button_time;
+  }
+
+  if (clear_button_state){
+    digitalWrite(8, HIGH);
+    for (int i = 1 ; i < EEPROM.length() ; i++) {
+        EEPROM.write(i, 0);
+        
+      }
+      clear_button_state = !clear_button_state;
+      Serial.flush();
+      addr = 3;
+      digitalWrite(8, LOW);
+  }
 
   saved_button = EEPROM.read(0); // serial mode saved in address 0
   digitalWrite(7, saved_button);
   // Waits until in "serial mode" to write values
-  if (Serial.available() > 0 && saved_button == 1) {
+  int avail = Serial.available();
+  if (avail > 0 && saved_button == 1) {
+    //DO NOT ADD DELAYS IN HERE. IT WILL CAUSE ISSUES READING DATA
+    digitalWrite(8, HIGH);
     ser = Serial.read();
-
     // check if start byte has been read and end byte hasn't
     // update EEPROM with new value
     if (start_flag == 1 && ser != '&') {
@@ -72,34 +105,27 @@ void loop()
 
     // ! means incoming byte is total number of steps
     if (ser == '!') {
-      digitalWrite(12, HIGH);
-      digitalWrite(13, HIGH);
-      delay(200);
-      digitalWrite(12, LOW);
-      digitalWrite(13, LOW);
+
 //      EEPROM.update(2, ser);
       step_flag = 1;
     }
 
     // check for start byte and set start flag
     if (ser == '#') { // start char
-      digitalWrite(12, LOW);
-      digitalWrite(13, HIGH);
-      delay(200);
-      digitalWrite(13, LOW);
       start_flag = 1;
     }
     //check for stop byte and reset start flag
     else if (ser == '&') { // stop char
       step_count++;
-      digitalWrite(13, LOW);
-      digitalWrite(12, HIGH);
-      delay(200);
-      digitalWrite(12, LOW);
-      start_flag = 0;\
+
+      start_flag = 0;
       EEPROM.update(2, step_count);
     }
     
+  }
+  else{
+    Serial.flush();
+    digitalWrite(8, LOW);
   }
   char start = EEPROM.read(1);
   get_message();
@@ -110,17 +136,20 @@ void loop()
 void get_message() {
   Serial.print('\n');
   num_steps = EEPROM.read(2);
+  Serial.print("number of steps: ");
   Serial.print(num_steps);
   Serial.print('\n');
   for (int i = 0; i < num_steps; i++) {
-
-    recipeInstructs RI = {EEPROM.read(step_addr), EEPROM.read(time_addr), EEPROM.read(timeu_addr), EEPROM.read(temp_addr), EEPROM.read(stage_addr)};
+    // Put into data structure for easy reading later
+    // It is possible to save a datastucture in EEPROM, IDK how to do that yet, if I learn in time I may implement that when data is being read.
+    recipeInstructs RI = {EEPROM.read(step_addr), EEPROM.read(time_addr), (char) EEPROM.read(timeu_addr), EEPROM.read(temp_addr), EEPROM.read(stage_addr)};
     step_addr = step_addr + 5;
     time_addr = time_addr + 5;
     timeu_addr = timeu_addr + 5;
     temp_addr = temp_addr + 5;
     stage_addr = stage_addr + 5;
-
+    
+    // Example of using the information
     Serial.print(RI.step);
     Serial.print('/');
     Serial.print(RI.time);
@@ -129,7 +158,7 @@ void get_message() {
     Serial.print('/');
     Serial.print(RI.temp);
     Serial.print('/');
-    Serial.print(RI.stage);
+    Serial.print(stages[RI.stage]);
     Serial.print('\n');
   }
 
@@ -147,9 +176,7 @@ void button_handler() {
   if (interrupt_time - last_interrupt_time > 200)
   {
     if (button == 0) {
-      for (int i = 1 ; i < EEPROM.length() ; i++) {
-        EEPROM.write(i, 0);
-      }
+      
     }
     button = EEPROM.read(0);
     button = !button;
