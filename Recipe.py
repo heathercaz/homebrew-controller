@@ -6,7 +6,6 @@ import json
 class Recipe:
     def __init__(self, name: str, ingredients: dict, instructions: dict, brewHistroy: list):
         self.name = name
-
         self.ingredients = {}
         # check ingredient type
         for i in ingredients.values(): 
@@ -40,9 +39,10 @@ class Recipe:
             else:
                 print("error adding instruction " + str(instrNum))
             instrNum+=1
-
         self.brewHistory = []
-        
+        for i in brewHistroy:
+            newHist = BrewHistory(i[0], i[1], i[2], i[3], i[4], i[5])
+            self.brewHistory.append(newHist)
 
     def __str__(self) -> str:
 
@@ -120,7 +120,7 @@ class Recipe:
         recipeDict = {}
         ingredientDict = {}
         instructionDict= {}
-        historyDict = {}
+        historyList = []
 
         for i in self.ingredients.values():
             ingredientDict[i.name] = [i.name, i.amount, i.unit, i.step]
@@ -131,15 +131,15 @@ class Recipe:
             instructionDict[j] = [i.time, i.temp, i.type, i.direction]
 
         try:
-            for i in self.brewHistory.values():
-                historyDict[i.date] = [i.date, i.batchSize, i.sg, i.ibu, i.abv, i.notes]
+            for i in self.brewHistory:
+                historyList.append([i.date, i.batchSize, i.sg, i.ibu, i.abv, i.notes])
         except:
             pass
 
         recipeDict["name"] = self.name
         recipeDict["ingredients"] = ingredientDict
         recipeDict["instructions"] = instructionDict
-        recipeDict["history"] = historyDict
+        recipeDict["history"] = historyList
 
         with open(filename + ".json", "w") as outfile:
             json.dump(recipeDict, outfile)
