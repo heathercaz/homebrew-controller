@@ -1,9 +1,10 @@
 from Ingredient import Ingredient
 from Instruction import Instruction
+from brewHistory import BrewHistory
 import json
 
 class Recipe:
-    def __init__(self, name: str, ingredients: dict, instructions: dict):
+    def __init__(self, name: str, ingredients: dict, instructions: dict, brewHistroy: list):
         self.name = name
 
         self.ingredients = {}
@@ -39,6 +40,8 @@ class Recipe:
             else:
                 print("error adding instruction " + str(instrNum))
             instrNum+=1
+
+        self.brewHistory = []
         
 
     def __str__(self) -> str:
@@ -96,6 +99,7 @@ class Recipe:
         #     self.instructions.append(newInstruction)
         # else:
         self.instructions[step] = newInstruction
+    
 
     def displayRecipe(self):
         ingredientStr = ""
@@ -116,31 +120,67 @@ class Recipe:
         recipeDict = {}
         ingredientDict = {}
         instructionDict= {}
+        historyDict = {}
 
         for i in self.ingredients.values():
             ingredientDict[i.name] = [i.name, i.amount, i.unit, i.step]
+        
         j = 0
         for i in self.instructions.values():
             j+=1
             instructionDict[j] = [i.time, i.temp, i.type, i.direction]
 
+        try:
+            for i in self.brewHistory.values():
+                historyDict[i.date] = [i.date, i.batchSize, i.sg, i.ibu, i.abv, i.notes]
+        except:
+            pass
+
         recipeDict["name"] = self.name
         recipeDict["ingredients"] = ingredientDict
         recipeDict["instructions"] = instructionDict
+        recipeDict["history"] = historyDict
 
         with open(filename + ".json", "w") as outfile:
             json.dump(recipeDict, outfile)
 
     def toSerial(self):
-        pass
+        stages = ["None","preheat", "heating", "mashing", "sparging", "fermenting", "chilling"]
+        serialArr = ['!'.encode() , bytes([len(self.instructions)])]
+        step = 1;
+        # print(self.instructions)
+        for i in self.instructions.values():
+            try:
+                time = int(i.time[:-1])
+                # time = 0
+                timeUnit = i.time[-1]
+            except:
+                time = 0
+                timeUnit = 'm'
+
+            try:
+                stage = stages.index(i.type.lower())
+
+            except:
+                stage = 0
+
+            try:
+                temp = int(i.temp)
+            except:
+                temp = 0
+
+
+
+            serialArr+=['#'.encode(), bytes([step]), bytes([time]), timeUnit.encode(), bytes([temp]), bytes([stage]), '&'.encode()]
+            step+= 1
+        return serialArr
+    def addBrewHistory(self, history):
+        self.brewHistory.append(history)
+
+    
+    def removeBrewHistory(self, num):
+        self.brewHistory.pop(num)
+
 
 if __name__ == "__main__":
-    testRecipe = Recipe("YUM BEER", {}, [0])
-    testRecipe2 = Recipe("YUMMIER BEER", {}, [])
-
-    testRecipe.addIngredient("hops", 4, "fermenter")
-    testRecipe.addIngredient("sugar", 2, "boiling")
-
-    testRecipe.addInstruction(0, "5 min", 100, "boil", "Add the sugar to the water. Let boil for 5 min")
-    testRecipe.addInstruction(1, "45 min", 27, "ferment", "Time to ferment those hops for 45 mins")
-    print(str(testRecipe))
+    pass
