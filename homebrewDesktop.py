@@ -44,7 +44,7 @@ class homebrewDesktop():
             if len(self.recipes) > 0:
                 self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
             else:
-                self.selectedRecipe = Recipe("None Selected", {}, {})
+                self.selectedRecipe = Recipe("None Selected", {}, {}, [])
             
 
         self.ui.listWidget.itemSelectionChanged.connect(self.previewRecipe)
@@ -55,6 +55,7 @@ class homebrewDesktop():
         self.ui.pushButton.clicked.connect(self.openBrewConfirmation)
 
         self.ui.notesButton.clicked.connect(self.openRecipeNotes)
+        self.currNote = 0
 
         self.ui.toolButton.clicked.connect(self.setWorkingDir)
         self.ui.plainTextEdit.setPlainText(self.workingDir)
@@ -88,7 +89,7 @@ class homebrewDesktop():
             if len(self.recipes) > 0:
                 self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
             else:
-                self.selectedRecipe = Recipe("None Selected", {}, {})
+                self.selectedRecipe = Recipe("None Selected", {}, {}, [])
             
         self.ui.recipePreview.setPlainText(self.selectedRecipe.displayRecipe())
 
@@ -153,15 +154,73 @@ class homebrewDesktop():
         ui.cancelButton.clicked.connect(self.fileConfirmationDialog.close)
         self.fileConfirmationDialog.show()
 
+    def prevNote(self, ui):
+        self.currNote-=1
+        self.updateNoteDisplay(ui)
+
+    def nextNote(self,ui):
+        self.currNote+=1
+        self.updateNoteDisplay(ui)
+        
+    def updateNoteDisplay(self, ui):
+        try:
+            recipeNote = self.selectedRecipe.brewHistory[self.currNote]
+        except:
+            recipeNote = None
+
+        try:
+            date = recipeNote.date
+        except:
+            date = None
+
+        try:
+            batchSize = recipeNote.batchSize
+        except:
+            batchSize = 0
+
+        try:
+            sg = recipeNote.sg
+        except:
+            sg = None
+
+        try:
+            ibu = recipeNote.ibu
+        except:
+            ibu = None
+
+        try:
+            abv = recipeNote.abv
+        except:
+            abv = None
+
+        try:
+            notes = recipeNote.notes
+        except:
+            notes = None
+
+        ui.dateText.setText(str(date))
+        ui.batchText.setText(str(batchSize))
+        ui.sgText.setText(str(sg))
+        ui.ibuText.setText(str(ibu))
+        ui.abvText.setText(str(abv))
+        ui.noteSection_2.setText(str(notes))
+
     def openRecipeNotes(self):
         self.recipeNotesDialog = QtWidgets.QDialog()
         ui = Ui_recipeNotes()
         ui.setupUi(self.recipeNotesDialog)
+        self.currNote = 0
+
+        self.updateNoteDisplay(ui)
 
         ui.cancelButton.clicked.connect(self.recipeNotesDialog.close)
         ui.newButton.clicked.connect(self.openNewRecipeNote)
 
+        ui.prevButton.clicked.connect(lambda:self.prevNote(ui))
+        ui.nextButton.clicked.connect(lambda:self.nextNote(ui))
+
         self.recipeNotesDialog.show()
+
 
     def openNewRecipeNote(self):
         self.newRecipeNotesDialog = QtWidgets.QDialog()
@@ -212,8 +271,8 @@ class homebrewDesktop():
             notes = None
 
         newBrewHistory = BrewHistory(date, batchSize, sg, ibu, abv, notes)
-        selectedRecipe.addBrewHistory(newBrewHistory, date)
-        print(str(selectedRecipe.brewHistory[date]))
+        selectedRecipe.addBrewHistory(newBrewHistory)
+        print(str(selectedRecipe.brewHistory))
 
     # Get's the recipe Name
 
@@ -229,7 +288,7 @@ class homebrewDesktop():
 
     def saveNewRecipe(self, ui):
         name = self.getRecipeName(ui)
-        newRec = Recipe(name, {}, {})
+        newRec = Recipe(name, {}, {}, [])
 
         # get all instructions from the table
 
@@ -301,7 +360,7 @@ class homebrewDesktop():
         for filename in os.listdir(direct):
             i = os.path.join(direct, filename)
             if os.path.isfile(i) == False:
-                print("error")
+                continue
 
             try:
                 with open(i, "r") as fo:
@@ -313,9 +372,10 @@ class homebrewDesktop():
             recipeName = recipeDict['name']
             recipeIngredients = recipeDict['ingredients']
             recipeInstructions = recipeDict['instructions']
+            recipeHistory = recipeDict['history']
 
             loadedRecipe = Recipe(
-                recipeName, recipeIngredients, recipeInstructions)
+                recipeName, recipeIngredients, recipeInstructions, recipeHistory)
             self.addRecipe(loadedRecipe)
             # print(str(recipeDict))
         return recipeDict

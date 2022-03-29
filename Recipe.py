@@ -4,7 +4,7 @@ from brewHistory import BrewHistory
 import json
 
 class Recipe:
-    def __init__(self, name: str, ingredients: dict, instructions: dict):
+    def __init__(self, name: str, ingredients: dict, instructions: dict, brewHistroy: list):
         self.name = name
 
         self.ingredients = {}
@@ -41,7 +41,7 @@ class Recipe:
                 print("error adding instruction " + str(instrNum))
             instrNum+=1
 
-        self.brewHistory = {}
+        self.brewHistory = []
         
 
     def __str__(self) -> str:
@@ -174,21 +174,13 @@ class Recipe:
             serialArr+=['#'.encode(), bytes([step]), bytes([time]), timeUnit.encode(), bytes([temp]), bytes([stage]), '&'.encode()]
             step+= 1
         return serialArr
-    def addBrewHistory(self, history, date):
-        self.brewHistory[date] = history
+    def addBrewHistory(self, history):
+        self.brewHistory.append(history)
 
     
-    def removeBrewHistory(self, date):
-        self.brewHistory.pop(date)
+    def removeBrewHistory(self, num):
+        self.brewHistory.pop(num)
 
 
 if __name__ == "__main__":
-    testRecipe = Recipe("YUM BEER", {}, [0])
-    testRecipe2 = Recipe("YUMMIER BEER", {}, [])
-
-    testRecipe.addIngredient("hops", 4, "fermenter")
-    testRecipe.addIngredient("sugar", 2, "boiling")
-
-    testRecipe.addInstruction(0, "5 min", 100, "boil", "Add the sugar to the water. Let boil for 5 min")
-    testRecipe.addInstruction(1, "45 min", 27, "ferment", "Time to ferment those hops for 45 mins")
-    print(str(testRecipe))
+    pass
