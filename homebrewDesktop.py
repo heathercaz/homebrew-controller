@@ -56,6 +56,7 @@ class homebrewDesktop():
 
         self.ui.notesButton.clicked.connect(self.openRecipeNotes)
         self.currNote = 0
+        self.maxCurrNote = 0
 
         self.ui.toolButton.clicked.connect(self.setWorkingDir)
         self.ui.plainTextEdit.setPlainText(self.workingDir)
@@ -155,14 +156,18 @@ class homebrewDesktop():
         self.fileConfirmationDialog.show()
 
     def prevNote(self, ui):
-        self.currNote-=1
+        if self.currNote > 0:
+            self.currNote-=1
         self.updateNoteDisplay(ui)
 
     def nextNote(self,ui):
-        self.currNote+=1
+        print(str(self.currNote) + " : " + str(self.maxCurrNote))
+        if self.currNote < self.maxCurrNote - 1:
+            self.currNote+=1
         self.updateNoteDisplay(ui)
         
     def updateNoteDisplay(self, ui):
+
         try:
             recipeNote = self.selectedRecipe.brewHistory[self.currNote]
         except:
@@ -210,6 +215,7 @@ class homebrewDesktop():
         ui = Ui_recipeNotes()
         ui.setupUi(self.recipeNotesDialog)
         self.currNote = 0
+        self.maxCurrNote = len(self.selectedRecipe.brewHistory)
 
         self.updateNoteDisplay(ui)
 
@@ -272,6 +278,9 @@ class homebrewDesktop():
 
         newBrewHistory = BrewHistory(date, batchSize, sg, ibu, abv, notes)
         selectedRecipe.addBrewHistory(newBrewHistory)
+        self.overwriteRecipe(selectedRecipe.name, None)
+        newName = self.workingDir+"/"+self.addRecipe(selectedRecipe)
+        selectedRecipe.toJson(newName )
         print(str(selectedRecipe.brewHistory))
 
     # Get's the recipe Name
@@ -352,9 +361,8 @@ class homebrewDesktop():
 
     def showSavedRecipes(self):
         print("loading recipes...")
-        # TODO Change Beer Recipes to selected directory
         direct = self.workingDir
-        # direct = os.getcwd()+"\\BeerRecipes\\"  # Get recipes from Directory.
+
         recipeDict = {}
 
         for filename in os.listdir(direct):
@@ -374,14 +382,16 @@ class homebrewDesktop():
             recipeInstructions = recipeDict['instructions']
             recipeHistory = recipeDict['history']
 
+            print(recipeHistory)
+
             loadedRecipe = Recipe(
                 recipeName, recipeIngredients, recipeInstructions, recipeHistory)
             self.addRecipe(loadedRecipe)
-            # print(str(recipeDict))
+            print(str(loadedRecipe.brewHistory))
         return recipeDict
 
     def overwriteRecipe(self, filename, editorUi):
-        direct = self.workingDir
+        direct = self.workingDir + "/"
         recipeFile = filename+'.json'
         # print(os.listdir(direct))
         if recipeFile in os.listdir(direct):
@@ -397,8 +407,10 @@ class homebrewDesktop():
 
         else:
             print("The file: " + recipeFile + " does not exist")
-
-        self.saveNewRecipe(editorUi)
+        if editorUi == None:
+            return
+        else:
+            self.saveNewRecipe(editorUi)
 
     def deleteRecipe(self, selectedRecipe):
         direct = self.workingDir
