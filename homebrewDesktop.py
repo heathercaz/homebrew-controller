@@ -344,7 +344,7 @@ class homebrewDesktop():
                 newRec.addIngredient(ingre, amnt, unit, step)
             newRec.addInstruction(step, time, temp, stage, note)
             step += 1
-        newName = self.workingDir+self.addRecipe(newRec)
+        newName = self.workingDir+"/"+self.addRecipe(newRec)
         newRec.toJson(newName)
         self.newRecipeDialog.close()
 
@@ -413,7 +413,7 @@ class homebrewDesktop():
             self.saveNewRecipe(editorUi)
 
     def deleteRecipe(self, selectedRecipe):
-        direct = self.workingDir
+        direct = self.workingDir + "/"
         recipeFile = selectedRecipe+'.json'
 
         if not selectedRecipe:
@@ -495,12 +495,23 @@ class homebrewDesktop():
         self.newRecipeDialog.show()
 
     def sendData(self, ui):
+
+        ferm = 0 
+        
+        if ui.ferm1.isChecked():
+            ferm = 1
+        elif ui.ferm2.isChecked():
+            ferm = 2
+        elif ui.ferm3.isChecked():
+            ferm = 3
+        
         ui.statusLabel.setText("Sending data. Do not disconnect")
         #TODO Add com port selection in gui
         ser = serial.Serial('COM3', 9600) #Connect to Com3, baud = 9600
         time.sleep(2) # Need this or race condition will happen!!
 
-        serialArr = self.selectedRecipe.toSerial()
+        print("ferm: " + str(ferm))
+        serialArr = self.selectedRecipe.toSerial(ferm)
         print(serialArr)
         bytesSent = 0
         for b in serialArr:
@@ -508,10 +519,9 @@ class homebrewDesktop():
             print(b)
             bytesSent+=1
             if bytesSent >= 60:
-                time.sleep(1) # give the arduino time to empty buffer
+                time.sleep(3) # give the arduino time to empty buffer
                 bytesSent = 0
-
-        #TODO add Fermentor info
+        
 
         ui.statusLabel.setText("Sending Complete")
 
