@@ -33,7 +33,7 @@ struct recipeInstructs {
   byte stage; // stored in addr = step*5 + 2
 };
 
-const char *stages[] = {"none","preheat", "heating", "mashing", "sparging", "fermenting", "chilling"};
+const char *stages[] = {"none","preheat", "heating", "mashing", "sparging",  "chilling", "fermenting", "fermenter1", "fermenter2", "fermenter3"};
 
 void setup()
 {

@@ -144,8 +144,8 @@ class Recipe:
         with open(filename + ".json", "w") as outfile:
             json.dump(recipeDict, outfile)
 
-    def toSerial(self):
-        stages = ["None","preheat", "heating", "mashing", "sparging", "fermenting", "chilling"]
+    def toSerial(self, ferm):
+        stages = ["none","preheat", "heating", "mashing", "sparging",  "chilling", "fermenting", "fermenter1", "fermenter2", "fermenter3"]
         serialArr = ['!'.encode() , bytes([len(self.instructions)])]
         step = 1;
         # print(self.instructions)
@@ -160,6 +160,13 @@ class Recipe:
 
             try:
                 stage = stages.index(i.type.lower())
+                if stage == stages.index("fermenting"):
+                    if ferm == 1:
+                        stage = stages.index("fermenter1")
+                    elif ferm == 2:
+                        stage = stages.index("fermenter2")
+                    elif ferm == 3:
+                        stage = stages.index("fermenter3")
 
             except:
                 stage = 0
@@ -169,7 +176,7 @@ class Recipe:
             except:
                 temp = 0
 
-
+            print(stages[stage])
 
             serialArr+=['#'.encode(), bytes([step]), bytes([time]), timeUnit.encode(), bytes([temp]), bytes([stage]), '&'.encode()]
             step+= 1
