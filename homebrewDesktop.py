@@ -29,6 +29,8 @@ class homebrewDesktop():
         self.workingDir = os.getcwd()
         self.selectedRecipe = None
 
+        self.comPort = 'COM3'
+
         self.app = QtWidgets.QApplication(sys.argv)
         self.HomebrewController = QtWidgets.QMainWindow()
         self.ui = Ui_HomebrewController()
@@ -128,10 +130,35 @@ class homebrewDesktop():
         ui = Ui_brewConfirmationDialog()
         ui.setupUi(self.brewConfirmationDialog)
 
+        #test for valid com port
+        try:
+            serial.Serial(self.comPort, 9600) #Connect to Com3, baud = 9600
+            time.sleep(2) # Need this or race condition will happen!!
+            ui.comValidLabel.setText("Com Port Valid")
+
+        except:
+            ui.comValidLabel.setText("Invalid Com Port")
+        
+        ui.comEdit.setText(self.comPort)
+        
         ui.yesButton.clicked.connect(self.brewConfirmationDialog.close)
         ui.sendButton.clicked.connect(lambda: self.sendData(ui))
+        ui.setButton.clicked.connect(lambda: self.setComPort(ui))
 
         self.brewConfirmationDialog.show()
+
+    def setComPort(self, ui):
+        self.comPort = ui.comEdit.text()
+
+        #test for valid com port
+        try:
+            serial.Serial(self.comPort, 9600) #Connect to Com3, baud = 9600
+            time.sleep(2) # Need this or race condition will happen!!
+            ui.comValidLabel.setText("Com Port Valid")
+
+        except:
+            ui.comValidLabel.setText("Invalid Com Port")
+
 
     def openFileConfirmation(self, editorUi):
         self.fileConfirmationDialog = QtWidgets.QDialog()
@@ -505,21 +532,28 @@ class homebrewDesktop():
         elif ui.ferm3.isChecked():
             ferm = 3
         
-        ui.statusLabel.setText("Sending data. Do not disconnect")
-        #TODO Add com port selection in gui
-        ser = serial.Serial('COM3', 9600) #Connect to Com3, baud = 9600
-        time.sleep(2) # Need this or race condition will happen!!
+        ui.statusLabel.setText("Sending data")
+        try:
+            ser = serial.Serial(self.comPort, 9600) #Connect to Com3, baud = 9600
+            time.sleep(2) # Need this or race condition will happen!!
+            
+            
+        except:
+            ui.statusLabel.setText("Invalid Com Port")
+            return
 
+        
         print("ferm: " + str(ferm))
         serialArr = self.selectedRecipe.toSerial(ferm)
         print(serialArr)
         bytesSent = 0
         for b in serialArr:
+            ui.statusLabel.setText("Sending data.")
             ser.write(b)
             print(b)
             bytesSent+=1
             if bytesSent >= 60:
-                time.sleep(3) # give the arduino time to empty buffer
+                time.sleep(4) # give the arduino time to empty buffer
                 bytesSent = 0
         
 
