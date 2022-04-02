@@ -507,7 +507,7 @@ class homebrewDesktop():
         
         ui.statusLabel.setText("Sending data. Do not disconnect")
         #TODO Add com port selection in gui
-        ser = serial.Serial('COM3', 9600) #Connect to Com3, baud = 9600
+        ser = serial.Serial('COM4', 9600) #Connect to Com3, baud = 9600
         time.sleep(2) # Need this or race condition will happen!!
 
         print("ferm: " + str(ferm))
@@ -519,7 +519,7 @@ class homebrewDesktop():
             print(b)
             bytesSent+=1
             if bytesSent >= 60:
-                time.sleep(3) # give the arduino time to empty buffer
+                time.sleep(4) # give the arduino time to empty buffer
                 bytesSent = 0
         
 

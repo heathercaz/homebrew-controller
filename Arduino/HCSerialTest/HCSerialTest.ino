@@ -19,6 +19,7 @@ int fermentor1Pin = 7;
 int heaterPin = 8;
 int chillerPin = 9;
 int buzzerPin = 10;
+int parserPin = 2;
 
 //One wire usage:
 #define ONE_WIRE_BUS 4                                // Data wire is plugged into port 4 on the Arduino
@@ -43,6 +44,7 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
   int addr;
   bool parserMode = false;                  // holds the state of the serial mode
   int ser;                                  // holds incoming serial value
+  
 //initialize retrieval addresses
   int step_addr = 3;
   int time_addr = 4;
@@ -58,17 +60,21 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
 
 //Stage Info Default Declarations
   
-  int totalStages = 5;
-  int stageName[] = {0,3,2,1,4};  //Stage "name" codes to be displayed on LCD from stageNames
-  int stageTemp[] = {30,40,25,70,10};                                          //Stage target temp in C
-  int stageTime[] = {2,4,3,15,12};
-  int stageDevice[] = {1,1,2,1,3}; //1 for kettle, 2 for chiller, 3 for fermenter 1, etc...
+  int totalStages = 1;
+  //int stageName[] = {0,3,2,1,4};  //Stage "name" codes to be displayed on LCD from stageNames
+  int stageName = 0;
+  //int stageTemp[] = {30,40,25,70,10};                                          //Stage target temp in C
+  int stageTemp = 0;
+  //int stageTime[] = {2,4,3,15,12};
+  int stageTime = 0;
+  //int stageDevice[] = {1,1,2,1,3}; //1 for kettle, 2 for chiller, 3 for fermenter 1, etc...
+  int stageDevice = 0;
 
   int fermentorState[3] = {0,0,0}; //EG Fermentor 1 running, 2 and 3 off. 1 should be set to 0 once that fermentor is finished running based on timer
   int f1Target = 27;               //EG Fermentor 1 target temp is 27C
 
 //  int stageName[50];
-  String stageNames[] = {"NONE","PREHEAT","HEATING","CHILLING","MASHING","FERMENTER1","FERMENTER2","FERMENTER3"};             //Stage "name" to be displayed on LCD
+  String stageNames[] = {"NONE","PREHEAT","HEATING","MASHING","SPARGING","CHILLING","FERMENTER1","FERMENTER2","FERMENTER3"};             //Stage "name" to be displayed on LCD
 //  int stageTemp[50];                                                  //Stage target temp in C
 //  int stageTime[50];                                                  //Stage time in minutes
 
@@ -81,6 +87,16 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
   int kettleMinutes = 0;
   int kettleSeconds = 0;
   unsigned long kettleTime;
+
+// Data struct to hold one step of a recipe instruction
+  struct recipeInstructs {
+  byte step; // stored in addr = step*5 - 2
+  byte time; // stored in addr = step*5 - 1
+  char time_unit; //stored in addr = step*5
+  byte temp; // stored in addr = step*5 + 1
+  byte stage; // stored in addr = step*5 + 2
+};
+const char *stages[] = {"none","preheat", "heating", "mashing", "sparging",  "chilling", "fermenting", "fermenter1", "fermenter2", "fermenter3"};
     
 //------------VOID SETUP----------------------------------------------------------------------
 
@@ -90,7 +106,7 @@ void setup() {
   Serial.begin(9600);
   Serial.flush();
   // initialize the LCD
-  lcd1.begin(); lcd2.begin(); lcd1.noBacklight(); lcd2.noBacklight();
+  lcd1.begin(); lcd2.begin(); lcd1.backlight(); lcd2.backlight();
   // initialize buttons
   pinMode(startButton, INPUT); pinMode(previousButton, INPUT); pinMode(nextButton, INPUT);  //setting pinmodes for buttons
   // contactless sensor
@@ -118,8 +134,8 @@ void loop() {
     digitalWrite(fermentor1Pin,LOW);  
   }
 
-  Serial.println(f1Temp);
-  if (stageDevice[stageNumber-1] == 3){
+  //Serial.println(f1Temp);
+  if (stageDevice == 3){
     if ((stageState == true) && (fermentorState[0] == 0)){
       fermentorState[0] = 1;
       lcd2.setCursor(12,0);
@@ -134,6 +150,21 @@ void loop() {
     }
   }
 
+ 
+           
+//STAGE & BUTTON CONTROL OPERATION
+  
+  if ((millis() - lastDebounceTime) > debounceDelay){   //check if more time has passed than debounce Delay
+    lastDebounceTime = millis();                        //reset debounce timer
+    startRead = digitalRead(startButton);
+    nextRead = digitalRead(nextButton);
+    previousRead = digitalRead(previousButton);
+
+    
+    if (startRead==1){                                            // START/STOP button operation
+      stageState = !stageState;
+      
+    }
 //PARSER OPERATION
 
   if (nextRead==1 && previousRead==1 && stageState==false){                   // Parser gate control (NEXT & PREVIOUS button pressed at same time)
@@ -169,29 +200,23 @@ void loop() {
       start_flag = 0;
       EEPROM.update(2, step_count);
     }
-    kettleTime = (stageTime[(stageNumber-1)])*60000;   
+    kettleTime = (stageTime)*60000;   
   }
   else{
     Serial.flush();
     digitalWrite(8, LOW);
   }
   char start = EEPROM.read(1);
-  //get_message();
-    
-    
-           
-//STAGE & BUTTON CONTROL OPERATION
   
-  if ((millis() - lastDebounceTime) > debounceDelay){   //check if more time has passed than debounce Delay
-    lastDebounceTime = millis();                        //reset debounce timer
-    startRead = digitalRead(startButton);
-    nextRead = digitalRead(nextButton);
-    previousRead = digitalRead(previousButton);
-    if (startRead==1){                                            // START/STOP button operation
-      stageState = !stageState;
-      
+  //get_message();
+    if (parserMode == true){
+      digitalWrite(parserPin,HIGH);
     }
-
+    if (parserMode == false){
+      digitalWrite(parserPin,LOW);
+    }
+    Serial.print(parserMode);  
+   
     if (nextRead==1 && stageState==false){                  // NEXT button operation
       lcd1.clear();
       if (stageNumber <= totalStages){
@@ -200,7 +225,7 @@ void loop() {
       if (stageNumber == (totalStages+1)){
         stageNumber = 1;
       } 
-      kettleTime = (stageTime[(stageNumber-1)])*60000;      
+      kettleTime = (stageTime)*60000;      
     }
     if (previousRead==1 && stageState==false){              // PREVIOUS button operation
       lcd1.clear();
@@ -210,10 +235,32 @@ void loop() {
       if (stageNumber == 0){
         stageNumber = totalStages;
       }
-      kettleTime = (stageTime[(stageNumber-1)])*60000; 
+      kettleTime = (stageTime)*60000; 
     }    
   }   // END BUTTON AND STAGE CONTROL
 
+  totalStages = EEPROM.read(2);
+  //step_addr = EEPROM.read((stageNumber*5)-2);     //Not be necessary as stageNumber does same thing
+  stageTime = EEPROM.read((stageNumber*5)-1);       //read current stage time from EEPROM
+  //timeu_addr = EEPROM.read((stageNumber*5));      //read time unit, not used yet
+  temp_addr = EEPROM.read((stageNumber*5)+1);       //read current stage temp
+  stageName = EEPROM.read((stageNumber*5)+2);       //read stage name
+  //Set stage device
+  if (stageName==1 || stageName==2 || stageName==3 || stageName==4){    //If stage is "PREHEAT","HEATING","MASHING","SPARGING"
+    stageDevice = 1;                                                    //Set stage device to KETTLE
+  }
+  if (stageName==5){                                                    //If stage is "CHILLING"
+    stageDevice = 2;                                                    //Set stage device to chiller
+  }
+  if (stageName==6){                                                    //If stage is "FERMENTOR1"
+    stageDevice = 3;                                                    //Set stage device to fermentor1
+  }
+  if (stageName==7){                                                    //Fermentor 2...
+    stageDevice = 4;
+  }
+  if (stageName==8){                                                    //Femrnetor 3...
+    stageDevice = 5;
+  }
 // HEATER AND CHILLER TIME CONTROL
   unsigned long currentTime = millis();
 
@@ -243,11 +290,11 @@ void loop() {
   }
 
 // HEATER CONTROL
-  int heaterTarget = stageTemp[stageNumber-1];
+  int heaterTarget = stageTemp;
   int kettleTempRead = sensors.getTempCByIndex(0);
   //Serial.println(sensors.getTempCByIndex(0));
   
-  if ((stageState==true) && (stageDevice[stageNumber-1]==1) ){
+  if ((stageState==true) && (stageDevice==1) ){
     
   int kettleTemp = heater(heaterTarget, kettleTempRead);
   }
@@ -258,7 +305,7 @@ void loop() {
 
 // CHILLER CONTROL
   
-  if (stageState==true && stageDevice[stageNumber-1]==2 ){
+  if (stageState==true && stageDevice==2 ){
     
   int kettleTemp = chiller(heaterTarget, kettleTempRead);
   }
@@ -270,13 +317,13 @@ void loop() {
 // STAGE INFORMATION DISPLAY / LCD CODE
   //lcd1.clear();
   lcd1.setCursor(0,0);
-  lcd1.print("S" + String(stageNumber) + " :" + stageNames[stageName[stageNumber-1]]);    //LCD1 Stage number, name, state
+  lcd1.print("S" + String(stageNumber) + " :" + stageNames[stageName]);    //LCD1 Stage number, name, state
   lcd1.setCursor(13,0);
-  if ((stageState == true) && (stageDevice[stageNumber-1] != 3)){
+  if ((stageState == true) && (stageDevice != 3)){
     lcd1.print("ON ");
     lcd1.setCursor(0,0);     
   }
-  if (stageState == false  && (stageDevice[stageNumber-1] != 3)) {
+  if (stageState == false  && (stageDevice != 3)) {
     lcd1.print("OFF");
     lcd1.setCursor(0,0);
   }
@@ -285,7 +332,7 @@ void loop() {
   lcd1.setCursor(0,1);
   lcd1.print(String(kettleMinutes) + ":" + String(kettleSeconds));             //LCD1 Time Remaining
   lcd1.setCursor(6,1);
-  lcd1.print(String(stageTemp[stageNumber-1])+"C");
+  lcd1.print(String(stageTemp)+"C");
   lcd1.setCursor(11,1);
   lcd1.print(String(kettleTempRead)+"C");
   lcd1.setCursor(0,0);
@@ -297,11 +344,12 @@ void loop() {
   lcd2.print(String(f1Temp) + "C");
   lcd2.setCursor(0,0);
 
-  //Serial.println("S" + String(stageNumber) + " :" + String(stageNames[stageName[stageNumber-1]])+ " " + String(kettleMinutes) + ":" + String(kettleSeconds) +" " + String(stageTemp[stageNumber-1])+"C"); 
+  //Serial.println("S" + String(stageNumber) + " :" + String(stageNames[stageName])+ " " + String(kettleMinutes) + ":" + String(kettleSeconds) +" " + String(stageTemp)+"C"); 
+  
   
   
 
-    
+ get_message();   
 }     //END VOID LOOP
 
 
@@ -343,7 +391,41 @@ int chiller(int heaterTarget, int kettleTempRead)             // CHILLER OPERATI
   }
 } 
 
+void get_message() {
+  Serial.print('\n');
+  num_steps = EEPROM.read(2);
+  Serial.print("number of steps: ");
+  Serial.print(num_steps);
+  Serial.print('\n');
+  for (int i = 0; i < num_steps; i++) {
+    // Put into data structure for easy reading later
+    // It is possible to save a datastucture in EEPROM, IDK how to do that yet, if I learn in time I may implement that when data is being read.
+    recipeInstructs RI = {EEPROM.read(step_addr), EEPROM.read(time_addr), (char) EEPROM.read(timeu_addr), EEPROM.read(temp_addr), EEPROM.read(stage_addr)};
+    step_addr = step_addr + 5;
+    time_addr = time_addr + 5;
+    timeu_addr = timeu_addr + 5;
+    temp_addr = temp_addr + 5;
+    stage_addr = stage_addr + 5;
+    
+    // Example of using the information
+    Serial.print(RI.step);
+    Serial.print('/');
+    Serial.print(RI.time);
+    Serial.print('/');
+    Serial.print(RI.time_unit);
+    Serial.print('/');
+    Serial.print(RI.temp);
+    Serial.print('/');
+    Serial.print(stages[RI.stage]);
+    Serial.print('\n');
+  }
 
+    step_addr = 3;
+    time_addr = 4;
+    timeu_addr = 5;
+    temp_addr = 6;
+    stage_addr = 7;
+}
 //Serial.print(" Temp F: ");
 //Serial.print(sensors.getTempF(deviceAddress)); // Makes a second call to getTempC and then converts to Fahrenheit
 
