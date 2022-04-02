@@ -46,24 +46,25 @@ class homebrewDesktop():
             if len(self.recipes) > 0:
                 self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
             else:
-                self.selectedRecipe = Recipe("None Selected", {}, {}, [])
+                self.selectedRecipe = Recipe("None Selected", {}, {}, [],'c')
             
-
+        # init Main screen Gui items
         self.ui.listWidget.itemSelectionChanged.connect(self.previewRecipe)
-
         self.ui.newRecipeButton.clicked.connect(self.openNewRecipe)
         self.ui.deleteRecipeButton.clicked.connect(self.openDeleteConfirmation)
         self.ui.editRecipeButton.clicked.connect(self.editRecipe)
-        self.ui.pushButton.clicked.connect(self.openBrewConfirmation)
+        self.ui.pushButton.clicked.connect(self.openBrewConfirmation) #Brew button
 
-        self.ui.notesButton.clicked.connect(self.openRecipeNotes)
+        self.ui.notesButton.clicked.connect(self.openRecipeNotes) # Brew history button
         self.currNote = 0
         self.maxCurrNote = 0
 
-        self.ui.toolButton.clicked.connect(self.setWorkingDir)
-        self.ui.plainTextEdit.setPlainText(self.workingDir)
+        self.ui.toolButton.clicked.connect(self.setWorkingDir) #Choose working directory
+        self.ui.plainTextEdit.setPlainText(self.workingDir) #Show working directory
 
     def setWorkingDir(self):
+        """summary: Opens directory window to select and set recipe directory.
+        """
         self.workingDir = QtWidgets.QFileDialog.getExistingDirectory(
             testHomebrewDesktop.HomebrewController, 'Select Working Directory')
         self.ui.plainTextEdit.setPlainText(self.workingDir)
@@ -71,9 +72,19 @@ class homebrewDesktop():
         self.ui.listWidget.clear()
         self.showSavedRecipes()
 
-    def addRecipe(self, recipe: dict):
+    def addRecipe(self, recipe):
+        """summary: Adds recipe to master recipe dictionary and updates the list
+        widget in the main window.
+
+        Args:
+            recipe: the recipe to be added to the master recipe dictionary
+
+        Returns:
+            type: string  recipe name
+        """
         recipe_num = 1
         original_name = recipe.name
+
         while recipe.name in self.recipes.keys():  # Make sure there are no repeated recipe names
             recipe.name = original_name + str(recipe_num)
             recipe_num += 1
@@ -85,6 +96,8 @@ class homebrewDesktop():
         return recipe.name
 
     def previewRecipe(self):
+        """summary: Displays the selected recipe in the preview section of the main window
+        """
         try:
             self.selectedRecipe = self.recipes[self.ui.listWidget.selectedItems()[
                 0].text()]
@@ -92,26 +105,28 @@ class homebrewDesktop():
             if len(self.recipes) > 0:
                 self.selectedRecipe = self.recipes[list(self.recipes.keys())[0]]
             else:
-                self.selectedRecipe = Recipe("None Selected", {}, {}, [])
+                self.selectedRecipe = Recipe("None Selected", {}, {}, [], 'c')
             
         self.ui.recipePreview.setPlainText(self.selectedRecipe.displayRecipe())
 
     def openNewRecipe(self):
+        """summary: Opens the new recipe dialog and initializes it
+        """
         self.newRecipeDialog = QtWidgets.QDialog()
         ui = Ui_newRecipe()
         ui.setupUi(self.newRecipeDialog)
 
         ui.doneButton.clicked.connect(lambda: self.openFileConfirmation(ui))
-        ui.addInstructionButton.clicked.connect(
-            lambda: self.increaseInstructionRows(ui))
-        ui.removeInstructionButton.clicked.connect(
-            lambda: self.decreaseInstructionRows(ui))
+        ui.addInstructionButton.clicked.connect(lambda: self.increaseInstructionRows(ui))
+        ui.removeInstructionButton.clicked.connect(lambda: self.decreaseInstructionRows(ui))
         ui.cancelButton.clicked.connect(self.newRecipeDialog.close)
 
         self.instrRows = 1
         self.newRecipeDialog.show()
 
     def openDeleteConfirmation(self):
+        """summary: Opens dialog to confirm deletion and initializes it.
+        """
         self.deleteConfirmationDialog = QtWidgets.QDialog()
         ui = Ui_DeleteConfirmationDialog()
         ui.setupUi(self.deleteConfirmationDialog)
@@ -126,6 +141,9 @@ class homebrewDesktop():
         self.deleteConfirmationDialog.show()
 
     def openBrewConfirmation(self):
+        """summary: Open brew confirmation dialog and initialize it.
+            Allows the user to send data to the microcontroller.
+        """
         self.brewConfirmationDialog = QtWidgets.QDialog()
         ui = Ui_brewConfirmationDialog()
         ui.setupUi(self.brewConfirmationDialog)
@@ -148,7 +166,7 @@ class homebrewDesktop():
         self.brewConfirmationDialog.show()
 
     def setComPort(self, ui):
-        self.comPort = ui.comEdit.text()
+        self.comPort = str(ui.comEdit.text()).upper()
 
         #test for valid com port
         try:
@@ -308,7 +326,6 @@ class homebrewDesktop():
         self.overwriteRecipe(selectedRecipe.name, None)
         newName = self.workingDir+"/"+self.addRecipe(selectedRecipe)
         selectedRecipe.toJson(newName )
-        print(str(selectedRecipe.brewHistory))
 
     # Get's the recipe Name
 
@@ -324,10 +341,15 @@ class homebrewDesktop():
 
     def saveNewRecipe(self, ui):
         name = self.getRecipeName(ui)
-        newRec = Recipe(name, {}, {}, [])
+        newRec = Recipe(name, {}, {}, [],'c')
+
+        # get temperature units
+        if ui.fahrenheitButton.isChecked():
+            newRec.tempUnit = 'f'
+        else:
+            newRec.tempUnit = 'c'
 
         # get all instructions from the table
-
         step = 1
         for i in range(self.instrRows):
             try:
@@ -408,11 +430,12 @@ class homebrewDesktop():
             recipeIngredients = recipeDict['ingredients']
             recipeInstructions = recipeDict['instructions']
             recipeHistory = recipeDict['history']
+            tempUnit = recipeDict['tempUnit']
 
             print(recipeHistory)
 
             loadedRecipe = Recipe(
-                recipeName, recipeIngredients, recipeInstructions, recipeHistory)
+                recipeName, recipeIngredients, recipeInstructions, recipeHistory, tempUnit)
             self.addRecipe(loadedRecipe)
             print(str(loadedRecipe.brewHistory))
         return recipeDict
@@ -421,6 +444,7 @@ class homebrewDesktop():
         direct = self.workingDir + "/"
         recipeFile = filename+'.json'
         # print(os.listdir(direct))
+
         if recipeFile in os.listdir(direct):
             # remove from files
             os.remove(direct + recipeFile)

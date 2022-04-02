@@ -4,9 +4,10 @@ from brewHistory import BrewHistory
 import json
 
 class Recipe:
-    def __init__(self, name: str, ingredients: dict, instructions: dict, brewHistroy: list):
+    def __init__(self, name: str, ingredients: dict, instructions: dict, brewHistroy: list, tempUnit: str):
         self.name = name
         self.ingredients = {}
+        self.tempUnit = tempUnit
         # check ingredient type
         for i in ingredients.values(): 
             if isinstance(i, list):
@@ -140,6 +141,7 @@ class Recipe:
         recipeDict["ingredients"] = ingredientDict
         recipeDict["instructions"] = instructionDict
         recipeDict["history"] = historyList
+        recipeDict["tempUnit"] = self.tempUnit
 
         with open(filename + ".json", "w") as outfile:
             json.dump(recipeDict, outfile)
@@ -148,7 +150,7 @@ class Recipe:
         stages = ["none","preheat", "heating", "mashing", "sparging",  "chilling", "fermenting", "fermenter1", "fermenter2", "fermenter3"]
         serialArr = ['!'.encode() , bytes([len(self.instructions)])]
         step = 1;
-        # print(self.instructions)
+
         for i in self.instructions.values():
             try:
                 time = int(i.time[:-1])
@@ -171,16 +173,29 @@ class Recipe:
             except:
                 stage = 0
 
+            
             try:
                 temp = int(i.temp)
+
             except:
                 temp = 0
 
-            print(stages[stage])
+            #convert to celcius
+            if self.tempUnit.lower() == "f":
+                    contemp = (temp - 32) * (5/9)
+            elif self.tempUnit.lower() == "c":
+                    contemp = temp
+            else:
+                contemp = 0
 
-            serialArr+=['#'.encode(), bytes([step]), bytes([time]), timeUnit.encode(), bytes([temp]), bytes([stage]), '&'.encode()]
+            if contemp < 0:
+                contemp = 0
+
+            serialArr+=['#'.encode(), bytes([step]), bytes([time]), timeUnit.encode(), bytes([int(contemp)]), bytes([stage]), '&'.encode()]
             step+= 1
         return serialArr
+
+
     def addBrewHistory(self, history):
         self.brewHistory.append(history)
 

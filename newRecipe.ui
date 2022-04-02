@@ -211,7 +211,7 @@
     </layout>
    </item>
    <item row="1" column="2">
-    <widget class="QRadioButton" name="radioButton_2">
+    <widget class="QRadioButton" name="celciusButton">
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
      </property>
@@ -231,7 +231,7 @@
     </widget>
    </item>
    <item row="1" column="1">
-    <widget class="QRadioButton" name="radioButton">
+    <widget class="QRadioButton" name="fahrenheitButton">
      <property name="text">
       <string>Fahrenheit</string>
      </property>
