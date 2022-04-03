@@ -2,7 +2,9 @@
 #include <EEPROM.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_MLX90614.h>
-Adafruit_MLX90614 mlx = Adafruit_MLX90614();
+Adafruit_MLX90614 mlx1 = Adafruit_MLX90614(0x5A);
+Adafruit_MLX90614 mlx2 = Adafruit_MLX90614(0x5B);
+Adafruit_MLX90614 mlx3 = Adafruit_MLX90614(0x5C);
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
@@ -15,10 +17,12 @@ LiquidCrystal_I2C lcd2(0x26, 16, 2);
 int startButton = 11; int previousButton = 12; int nextButton = 13;    // Assign button pins
 int startReadOld = 1; int previousReadOld = 1; int nextReadOld = 1; // Button Initializations
 //Equipment Relay Pins
-int fermentor1Pin = 7;
-int heaterPin = 8;
-int chillerPin = 9;
-int buzzerPin = 10;
+int fermentor1Pin = 9;
+int fermentor2Pin = 8;
+int fermentor3Pin = 7;
+int heaterPin = 10;
+int chillerPin = 6;
+int buzzerPin = 5;
 int parserPin = 2;
 
 //One wire usage:
@@ -35,9 +39,11 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
   bool stageState = false;
   int stageNumber = 1;
   int f1Temp;
+  int f2Temp;
+  int f3Temp;
                                             
   unsigned long lastDebounceTime = 0;               // This is reset to millis() each time a switch is pressed
-  unsigned long debounceDelay = 150;                // Debounce delay, 200ms seems like a good balance
+  unsigned long debounceDelay = 150;                // Debounce delay, 150ms seems like a good balance
   unsigned long BuzzerLength = 1000;
 
 //Parser Declarations
@@ -61,22 +67,19 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
 //Stage Info Default Declarations
   
   int totalStages = 1;
-  //int stageName[] = {0,3,2,1,4};  //Stage "name" codes to be displayed on LCD from stageNames
   int stageName = 0;
-  //int stageTemp[] = {30,40,25,70,10};                                          //Stage target temp in C
   int stageTemp = 0;
-  //int stageTime[] = {2,4,3,15,12};
   int stageTime = 0;
-  //int stageDevice[] = {1,1,2,1,3}; //1 for kettle, 2 for chiller, 3 for fermenter 1, etc...
-  int stageDevice = 0;
+  int stageDevice = 0;  //1 for kettle, 2 for chiller, 3 for fermenter 1, 4 for fermenter 2, 5 for fermenter 3
 
   int fermentorState[3] = {0,0,0}; //EG Fermentor 1 running, 2 and 3 off. 1 should be set to 0 once that fermentor is finished running based on timer
-  int f1Target = 27;               //EG Fermentor 1 target temp is 27C
+  int f1Target = 27;               //EG Fermentor 1 starting target temp is 27C
+  int f2Target = 27;               //EG Fermentor 2 starting target temp is 27C
+  int f3Target = 27;               //EG Fermentor 3 starting target temp is 27C
 
-//  int stageName[50];
+
   String stageNames[] = {"NONE","PREHEAT","HEATING","MASHING","SPARGING","CHILLING","FERMENTER1","FERMENTER2","FERMENTER3"};             //Stage "name" to be displayed on LCD
-//  int stageTemp[50];                                                  //Stage target temp in C
-//  int stageTime[50];                                                  //Stage time in minutes
+
 
  //Timer initializations
   const unsigned long kettleTimeIncr = 1000;        // Kettle timer count down every second
@@ -96,7 +99,7 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
   byte temp; // stored in addr = step*5 + 1
   byte stage; // stored in addr = step*5 + 2
 };
-const char *stages[] = {"none","preheat", "heating", "mashing", "sparging",  "chilling", "fermenting", "fermenter1", "fermenter2", "fermenter3"};
+const char *stages[] = {"none","preheat", "heating", "mashing", "sparging",  "chilling", "fermenter1", "fermenter2", "fermenter3"};
     
 //------------VOID SETUP----------------------------------------------------------------------
 
@@ -109,14 +112,16 @@ void setup() {
   lcd1.begin(); lcd2.begin(); lcd1.backlight(); lcd2.backlight();
   // initialize buttons
   pinMode(startButton, INPUT); pinMode(previousButton, INPUT); pinMode(nextButton, INPUT);  //setting pinmodes for buttons
-  // contactless sensor
-  mlx.begin();
+  // contactless sensors
+  mlx1.begin();
+  mlx2.begin();
+  mlx3.begin();
   // contact sensor
   sensors.begin();
   
   // equipment pins
   pinMode(fermentor1Pin, OUTPUT);
-
+  addr = 3;
 }
 
 //------------VOID LOOP----------------------------------------------------------------------
@@ -125,25 +130,71 @@ void loop() {
 
 //FERMENTOR CONTROL
 
-  if (fermentorState[0] == 1){
-    //lcd2.clear();
+  if (fermentorState[0] == 1){                  //FERMENTER 1
     f1Temp = fermentor1(f1Target);    
-  }
-  
+  } 
   else{
     digitalWrite(fermentor1Pin,LOW);  
   }
 
-  //Serial.println(f1Temp);
-  if (stageDevice == 3){
+  if (fermentorState[1] == 1){                  //FERMENTER 2
+    f2Temp = fermentor2(f2Target);    
+  } 
+  else{
+    digitalWrite(fermentor2Pin,LOW);  
+  }
+    
+  if (fermentorState[2] == 1){                  //FERMENTER 3
+    f3Temp = fermentor3(f3Target);    
+  } 
+  else{
+    digitalWrite(fermentor3Pin,LOW);  
+  }
+
+  
+//FERMENTOR STATE CONTROL;
+  if (stageDevice == 3){                                        //stageDevice 3 is FERMENTER 1
     if ((stageState == true) && (fermentorState[0] == 0)){
       fermentorState[0] = 1;
+      f1Target = stageTemp;
       lcd2.setCursor(12,0);
       lcd2.print("  ON");
       stageState = false;
     }
     if ((stageState == true) && (fermentorState[0] == 1)){
       fermentorState[0] = 0;
+      lcd2.setCursor(12,0);
+      lcd2.print(" OFF"); 
+      stageState = false;
+    }
+  }
+
+  if (stageDevice == 4){                                        //stageDevice 4 is FERMENTER 2
+    if ((stageState == true) && (fermentorState[1] == 0)){
+      fermentorState[1] = 1;
+      f2Target = stageTemp;
+      lcd2.setCursor(12,0);
+      lcd2.print("  ON");
+      stageState = false;
+    }
+    if ((stageState == true) && (fermentorState[1] == 1)){
+      fermentorState[1] = 0;
+      lcd2.setCursor(12,0);
+      lcd2.print(" OFF"); 
+      stageState = false;
+    }
+  }  
+
+  if (stageDevice == 5){                                        //stageDevice 5 is FERMENTER 3
+    if ((stageState == true) && (fermentorState[2] == 0)){
+      fermentorState[2] = 1;
+      f3Target = stageTemp;
+      lcd2.setCursor(12,0);
+      lcd2.print("  ON");
+      stageState = false;
+    }
+    if ((stageState == true) && (fermentorState[2] == 1)){
+      fermentorState[2] = 0;
       lcd2.setCursor(12,0);
       lcd2.print(" OFF"); 
       stageState = false;
@@ -165,7 +216,7 @@ void loop() {
       stageState = !stageState;
       
     }
-//PARSER OPERATION
+//PARSER BUTTON AND OPERATION
 
   if (nextRead==1 && previousRead==1 && stageState==false){                   // Parser gate control (NEXT & PREVIOUS button pressed at same time)
     parserMode=!parserMode;
@@ -182,29 +233,25 @@ void loop() {
       EEPROM.update(addr, ser);
       addr++;
     }
-    // ! means incoming byte is total number of steps
-    if (ser == '!') {
-
-    //  EEPROM.update(2, ser);
-      step_flag = 1;
+    
+    if (ser == '!') {                           // ! means incoming byte is total number of steps    
+      step_flag = 1;                            //  EEPROM.update(2, ser);
     }
-
-    // check for start byte and set start flag
-    if (ser == '#') { // start char
+   
+    if (ser == '#') { // start char             // check for start byte and set start flag
       start_flag = 1;
     }
-    //check for stop byte and reset start flag
-    else if (ser == '&') { // stop char
+    
+    else if (ser == '&') { // stop char         //check for stop byte and reset start flag
       step_count++;
-
       start_flag = 0;
       EEPROM.update(2, step_count);
     }
+    stageTime = EEPROM.read((stageNumber*5)-1);
     kettleTime = (stageTime)*60000;   
   }
   else{
     Serial.flush();
-    digitalWrite(8, LOW);
   }
   char start = EEPROM.read(1);
   
@@ -216,7 +263,17 @@ void loop() {
       digitalWrite(parserPin,LOW);
     }
     Serial.print(parserMode);  
-   
+
+    if (parserMode==true && startRead==1){                // EEPROM clear functionality, when parserMode is on, hold START button for a second.
+      for (int i = 1 ; i < EEPROM.length() ; i++) {
+        EEPROM.write(i, 0);
+        
+      }
+      Serial.flush();
+      addr = 3;           
+    }
+
+//NAVIGATION BUTTONS   
     if (nextRead==1 && stageState==false){                  // NEXT button operation
       lcd1.clear();
       if (stageNumber <= totalStages){
@@ -224,7 +281,8 @@ void loop() {
       }
       if (stageNumber == (totalStages+1)){
         stageNumber = 1;
-      } 
+      }
+      stageTime = EEPROM.read((stageNumber*5)-1); 
       kettleTime = (stageTime)*60000;      
     }
     if (previousRead==1 && stageState==false){              // PREVIOUS button operation
@@ -235,15 +293,16 @@ void loop() {
       if (stageNumber == 0){
         stageNumber = totalStages;
       }
+      stageTime = EEPROM.read((stageNumber*5)-1);
       kettleTime = (stageTime)*60000; 
     }    
   }   // END BUTTON AND STAGE CONTROL
 
-  totalStages = EEPROM.read(2);
-  //step_addr = EEPROM.read((stageNumber*5)-2);     //Not be necessary as stageNumber does same thing
+  totalStages = (EEPROM.read(2))-1;
+  //stageNumber = EEPROM.read((stageNumber*5)-2);     //Not necessary as stageNumber does same thing
   stageTime = EEPROM.read((stageNumber*5)-1);       //read current stage time from EEPROM
   //timeu_addr = EEPROM.read((stageNumber*5));      //read time unit, not used yet
-  temp_addr = EEPROM.read((stageNumber*5)+1);       //read current stage temp
+  stageTemp = EEPROM.read((stageNumber*5)+1);       //read current stage temp
   stageName = EEPROM.read((stageNumber*5)+2);       //read stage name
   //Set stage device
   if (stageName==1 || stageName==2 || stageName==3 || stageName==4){    //If stage is "PREHEAT","HEATING","MASHING","SPARGING"
@@ -339,7 +398,7 @@ void loop() {
 
   //Fermentor LCD:
   lcd2.setCursor(0,0);  
-  lcd2.print("FERMENTOR 1:");
+  lcd2.print("F1:" + String(f1Temp) + "C " + "F2:" + String(f2Temp) + "C " + "F3:" + String(f3Temp) + "C ");
   lcd2.setCursor(0,1);
   lcd2.print(String(f1Temp) + "C");
   lcd2.setCursor(0,0);
@@ -356,7 +415,7 @@ void loop() {
 //----------- FUNCTIONS----------------------------------------------------------------------------
 
 int fermentor1(int f1Target){                       //FERMENTOR 1 OPERATION FUNCTION, RETURNS FERMENTER 1 TEMP
-    float f1TempData = mlx.readObjectTempC();
+    float f1TempData = mlx1.readObjectTempC();
     int f1Temp = f1TempData;
     if (f1Temp > f1Target){
       digitalWrite(fermentor1Pin,HIGH);
@@ -366,6 +425,32 @@ int fermentor1(int f1Target){                       //FERMENTOR 1 OPERATION FUNC
     }
 
     return(f1Temp);
+}
+
+int fermentor2(int f2Target){                       //FERMENTOR 2 OPERATION FUNCTION, RETURNS FERMENTER 2 TEMP
+    float f2TempData = mlx2.readObjectTempC();
+    int f2Temp = f2TempData;
+    if (f2Temp > f2Target){
+      digitalWrite(fermentor2Pin,HIGH);
+    }
+    else{
+      digitalWrite(fermentor2Pin,LOW);
+    }
+
+    return(f2Temp);
+}
+
+int fermentor3(int f3Target){                       //FERMENTOR 3 OPERATION FUNCTION, RETURNS FERMENTER 3 TEMP
+    float f3TempData = mlx3.readObjectTempC();
+    int f3Temp = f3TempData;
+    if (f3Temp > f3Target){
+      digitalWrite(fermentor3Pin,HIGH);
+    }
+    else{
+      digitalWrite(fermentor3Pin,LOW);
+    }
+
+    return(f3Temp);
 }
 
 int heater(int heaterTarget, int kettleTempRead)             // HEATER OPERATION FUNCTION
