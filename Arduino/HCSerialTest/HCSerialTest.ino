@@ -73,13 +73,16 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
   int stageTime = 0;
   int stageDevice = 0;  //1 for kettle, 2 for chiller, 3 for fermenter 1, 4 for fermenter 2, 5 for fermenter 3
 
-  int fermentorState[3] = {0,0,0}; //EG Fermentor 1 running, 2 and 3 off. 1 should be set to 0 once that fermentor is finished running based on timer
-  int f1Target = 27;               //EG Fermentor 1 starting target temp is 27C
-  int f2Target = 27;               //EG Fermentor 2 starting target temp is 27C
-  int f3Target = 27;               //EG Fermentor 3 starting target temp is 27C
+  int fermentorState[3] = {EEPROM.read(200),EEPROM.read(201),EEPROM.read(202)}; //EG Fermentor 1 running, 2 and 3 off. 1 should be set to 0 once that fermentor is finished running based on timer
+//  int fermentorState[0];  EEPROM.read(200);
+//  int fermentorState[1];  EEPROM.read(201);
+//  int fermentorState[2];  EEPROM.read(202);        
+  int f1Target = EEPROM.read(203);               //EG Fermentor 1 starting target temp is 27C
+  int f2Target = EEPROM.read(204);               //EG Fermentor 2 starting target temp is 27C
+  int f3Target = EEPROM.read(205);               //EG Fermentor 3 starting target temp is 27C
 
 
-  String stageNames[] = {"NONE","PREHEAT","HEATING","MASHING","SPARGING","CHILLING","FERMENTER1","FERMENTER2","FERMENTER3"};             //Stage "name" to be displayed on LCD
+  String stageNames[] = {"NONE","PREHEAT","HEATING","MASHING","SPARGING","CHILLING","FERMENTING","FERMENTER1","FERMENTER2","FERMENTER3"};             //Stage "name" to be displayed on LCD
 
 
  //Timer initializations
@@ -272,13 +275,21 @@ void loop() {
     }
     Serial.print(parserMode);  
 
-    if (parserMode==true && startRead==1){                // EEPROM clear functionality, when parserMode is on, hold START button for a second.
+    if (parserMode==true && startRead==1){                // EEPROM clear functionality, when parserMode is on, hold START button for a second.     
       for (int i = 1 ; i < EEPROM.length() ; i++) {
         EEPROM.write(i, 0);
         
       }
       Serial.flush();
-      addr = 3;           
+      addr = 3;
+      EEPROM.update(200,fermentorState[0]);
+      EEPROM.update(201,fermentorState[1]); 
+      EEPROM.update(202,fermentorState[2]);        
+      EEPROM.update(203,f1Target);
+      EEPROM.update(204,f2Target);
+      EEPROM.update(205,f3Target);
+      //saved fermentor states for before clearing so fermenters can run
+      //fermenter states repopulated in global initializations since recipe update is a soft reset                 
     }
 
 //NAVIGATION BUTTONS   
@@ -319,13 +330,13 @@ void loop() {
   if (stageName==5){                                                    //If stage is "CHILLING"
     stageDevice = 2;                                                    //Set stage device to chiller
   }
-  if (stageName==6){                                                    //If stage is "FERMENTOR1"
+  if (stageName==7){                                                    //If stage is "FERMENTOR1"
     stageDevice = 3;                                                    //Set stage device to fermentor1
   }
-  if (stageName==7){                                                    //Fermentor 2...
+  if (stageName==8){                                                    //Fermentor 2...
     stageDevice = 4;
   }
-  if (stageName==8){                                                    //Femrnetor 3...
+  if (stageName==9){                                                    //Femrnetor 3...
     stageDevice = 5;
   }
 // HEATER AND CHILLER TIME CONTROL
