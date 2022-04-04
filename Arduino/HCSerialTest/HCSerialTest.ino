@@ -9,6 +9,7 @@ Adafruit_MLX90614 mlx3 = Adafruit_MLX90614(0x5C);
 #include <DallasTemperature.h>
 
 
+
 //Declare LCD i2c addresses
 LiquidCrystal_I2C lcd1(0x27, 16, 2);
 LiquidCrystal_I2C lcd2(0x26, 16, 2);
@@ -87,6 +88,9 @@ DallasTemperature sensors(&oneWire);                  // Pass our oneWire refere
   unsigned long previousTime_1 = 0;
   unsigned long previousTime_2 = 0;
 
+  unsigned long lastSensorTime = millis();
+  const unsigned long sensorTime = 750;             // Contact sensor needs 750ms to fill resolution
+
   int kettleMinutes = 0;
   int kettleSeconds = 0;
   unsigned long kettleTime;
@@ -118,6 +122,10 @@ void setup() {
   mlx3.begin();
   // contact sensor
   sensors.begin();
+  sensors.setWaitForConversion(false);
+  sensors.requestTemperatures();
+  
+  
   
   // equipment pins
   pinMode(fermentor1Pin, OUTPUT);
@@ -131,24 +139,36 @@ void loop() {
 //FERMENTOR CONTROL
 
   if (fermentorState[0] == 1){                  //FERMENTER 1
-    f1Temp = fermentor1(f1Target);    
+    f1Temp = fermentor1(f1Target); 
+    lcd2.setCursor(3,0);
+    lcd2.print(String(f1Temp)+"C");   
   } 
   else{
-    digitalWrite(fermentor1Pin,LOW);  
+    digitalWrite(fermentor1Pin,LOW);
+    lcd2.setCursor(3,0);
+    lcd2.print("OFF");  
   }
 
   if (fermentorState[1] == 1){                  //FERMENTER 2
-    f2Temp = fermentor2(f2Target);    
+    f2Temp = fermentor2(f2Target);  
+    lcd2.setCursor(13,0);
+    lcd2.print(String(f2Temp)+"C");  
   } 
   else{
-    digitalWrite(fermentor2Pin,LOW);  
+    digitalWrite(fermentor2Pin,LOW); 
+    lcd2.setCursor(13,0);
+    lcd2.print("OFF"); 
   }
     
   if (fermentorState[2] == 1){                  //FERMENTER 3
-    f3Temp = fermentor3(f3Target);    
+    f3Temp = fermentor3(f3Target);
+    lcd2.setCursor(3,1);
+    lcd2.print(String(f3Temp)+"C");    
   } 
   else{
-    digitalWrite(fermentor3Pin,LOW);  
+    digitalWrite(fermentor3Pin,LOW);
+    lcd2.setCursor(3,1);
+    lcd2.print("OFF");  
   }
 
   
@@ -157,14 +177,10 @@ void loop() {
     if ((stageState == true) && (fermentorState[0] == 0)){
       fermentorState[0] = 1;
       f1Target = stageTemp;
-      lcd2.setCursor(12,0);
-      lcd2.print("  ON");
       stageState = false;
     }
     if ((stageState == true) && (fermentorState[0] == 1)){
       fermentorState[0] = 0;
-      lcd2.setCursor(12,0);
-      lcd2.print(" OFF"); 
       stageState = false;
     }
   }
@@ -173,14 +189,10 @@ void loop() {
     if ((stageState == true) && (fermentorState[1] == 0)){
       fermentorState[1] = 1;
       f2Target = stageTemp;
-      lcd2.setCursor(12,0);
-      lcd2.print("  ON");
       stageState = false;
     }
     if ((stageState == true) && (fermentorState[1] == 1)){
       fermentorState[1] = 0;
-      lcd2.setCursor(12,0);
-      lcd2.print(" OFF"); 
       stageState = false;
     }
   }  
@@ -189,14 +201,10 @@ void loop() {
     if ((stageState == true) && (fermentorState[2] == 0)){
       fermentorState[2] = 1;
       f3Target = stageTemp;
-      lcd2.setCursor(12,0);
-      lcd2.print("  ON");
       stageState = false;
     }
     if ((stageState == true) && (fermentorState[2] == 1)){
-      fermentorState[2] = 0;
-      lcd2.setCursor(12,0);
-      lcd2.print(" OFF"); 
+      fermentorState[2] = 0; 
       stageState = false;
     }
   }
@@ -212,7 +220,7 @@ void loop() {
     previousRead = digitalRead(previousButton);
 
     
-    if (startRead==1){                                            // START/STOP button operation
+    if (startRead==1 && parserMode==0){                                            // START/STOP button operation
       stageState = !stageState;
       
     }
@@ -349,6 +357,15 @@ void loop() {
   }
 
 // HEATER CONTROL
+  if ( (millis()-lastSensorTime) > sensorTime)
+  {
+    //temperature = sensors.getTempCByIndex(0);
+    sensors.requestTemperatures();                    // ask for next reading 
+    lastSensorTime = millis();
+
+    // process temperature here
+    
+  }
   int heaterTarget = stageTemp;
   int kettleTempRead = sensors.getTempCByIndex(0);
   //Serial.println(sensors.getTempCByIndex(0));
@@ -398,9 +415,10 @@ void loop() {
 
   //Fermentor LCD:
   lcd2.setCursor(0,0);  
-  lcd2.print("F1:" + String(f1Temp) + "C " + "F2:" + String(f2Temp) + "C " + "F3:" + String(f3Temp) + "C ");
+  //lcd2.print("F1:" + String(f1Temp) + "C " + "F2:" + String(f2Temp) + "C " + "F3:" + String(f3Temp) + "C ");
+  lcd2.print("F1:");lcd2.setCursor(10,0);lcd2.print("F2:");
   lcd2.setCursor(0,1);
-  lcd2.print(String(f1Temp) + "C");
+  lcd2.print("F3:");;
   lcd2.setCursor(0,0);
 
   //Serial.println("S" + String(stageNumber) + " :" + String(stageNames[stageName])+ " " + String(kettleMinutes) + ":" + String(kettleSeconds) +" " + String(stageTemp)+"C"); 
